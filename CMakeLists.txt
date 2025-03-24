@@ -13,11 +13,14 @@ find_package(protobuf REQUIRED)
 set(TARGET_VALUE proto_generated)
 add_subdirectory(proto)
 
+# set source directory and files
+set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
+message(STATUS "SOURCE_DIR: ${SOURCE_DIR}")
+file(GLOB SOURCES ${SOURCE_DIR}/*.cpp)
+
+add_library(blackbox ${SOURCES})
+target_include_directories(blackbox PUBLIC ${SOURCE_DIR})
+target_link_libraries(blackbox PUBLIC mcap::mcap proto_generated)
+
 add_executable(example.out ${CMAKE_SOURCE_DIR}/example/example.cpp)
-# target_include_directories(example.out PRIVATE ${CMAKE_INSTALL_PREFIX}/proto)
 target_link_libraries(example.out PUBLIC mcap::mcap proto_generated)
-
-# set_target_properties(example.out PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/.)
-
-# Link the executable against the Protobuf libraries
-# target_link_libraries(example.out PUBLIC mcap::mcap ${Protobuf_LIBRARIES})
