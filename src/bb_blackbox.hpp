@@ -41,14 +41,14 @@ public:
 
         void BlackBoxWriter_cons(BlackBox* handle, std::string topic_name, size_t drop_count=0)
         {
-            auto res = _handle->create(topic_name, MessageT::descriptor());
+            auto res = handle->create(topic_name, MessageT::descriptor());
             if(res.first)
             {
                 _handle = handle;
                 _channel_id = res.second;
                 _topic_name = topic_name;
                 _counter = 0;
-                _drop_count = drop_count;
+                _drop_count = (drop_count + 1);
             }
         }
 
@@ -58,7 +58,8 @@ public:
 
         void write(std::optional<MessageT> msg, bb_time_t tim)
         {
-            if(msg.has_value() & (_handle != NULL) && ((_counter % _drop_count) == 0))
+            if(msg.has_value()){
+            if((_handle != NULL) && ((_counter % _drop_count) == 0))
             {
                 // メッセージのシリアライズ
                 std::vector<std::byte> payload(msg.value().ByteSizeLong()); // uint8_t を使用
@@ -73,6 +74,7 @@ public:
                 mcap_msg.dataSize = payload.size();
 
                 _handle->write(mcap_msg);
+            }
             }
             _counter++;
         }
@@ -145,7 +147,7 @@ public:
 
     bb_time_t get_bb_tim(void){
         auto now  = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(_clock - now);
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(now - _clock);
     }
 
     private:

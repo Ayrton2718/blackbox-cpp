@@ -1,7 +1,6 @@
 [requires]
 mcap/1.4.1
-yaml-cpp/0.8.0
-protobuf/3.17.1
+protobuf/5.27.0
 [generators]
 CMakeDeps
 CMakeToolchain

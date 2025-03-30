@@ -6,12 +6,18 @@ set -e  # Exit immediately if a command exits with a non-zero status
 BUILD_DIR="build"
 INSTALL_DIR="install"
 FORCE_REBUILD=false
+BUILD_TYPE="Release"
+DEBUG_MACRO=""
 
 # Parse command-line arguments
-while getopts "B" opt; do
+while getopts "BD" opt; do
     case "$opt" in
         B) FORCE_REBUILD=true ;;
-        *) echo "Usage: $0 [-B]"; exit 1 ;;
+        D) 
+            BUILD_TYPE="Debug"
+            DEBUG_MACRO="-DCMAKE_VERBOSE_MAKEFILE=ON"
+            ;;
+        *) echo "Usage: $0 [-B] [-D]"; exit 1 ;;
     esac
 done
 
@@ -38,9 +44,8 @@ conan install . --build=missing
 # Navigate to build directory
 cd "$BUILD_DIR"
 
-# Run CMake
-# cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX="../$INSTALL_DIR"
-cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="../$INSTALL_DIR"
+# Run CMake with the selected build type and optional debug macro
+cmake .. -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="../$INSTALL_DIR" $DEBUG_MACRO
 
 # Build project
 cmake --build . -j4

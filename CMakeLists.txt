@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 3.15)
 project(mcap_serializer)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS On)
-set(CMAKE_CXX_STANDARD 17)
-
-include(${CMAKE_BINARY_DIR}/Release/generators/conan_toolchain.cmake)  # Conanのツールチェーンを読み込む
+include(${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/generators/conan_toolchain.cmake)
 
 # Find dependencies
 find_package(mcap REQUIRED)
 find_package(protobuf REQUIRED)
+
+# if CMAKE_BUILD_TYPE is Debug I want to add -g -rdynamic to the flags
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -rdynamic")
+endif()
 
 set(TARGET_VALUE proto_generated)
 add_subdirectory(proto)
@@ -23,4 +25,5 @@ target_include_directories(blackbox PUBLIC ${SOURCE_DIR})
 target_link_libraries(blackbox PUBLIC mcap::mcap proto_generated)
 
 add_executable(example.out ${CMAKE_SOURCE_DIR}/example/example.cpp)
-target_link_libraries(example.out PUBLIC mcap::mcap proto_generated)
+target_include_directories(example.out PUBLIC ${SOURCE_DIR})
+target_link_libraries(example.out PUBLIC mcap::mcap blackbox)

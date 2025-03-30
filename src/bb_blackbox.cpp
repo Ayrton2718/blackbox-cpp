@@ -48,8 +48,9 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
         throw std::runtime_error("Failed to serialize FileDescriptorSet");
     }
 
-    // std::cout << "Binary data size: " << binary_data.size() << std::endl;
-    std::cout << "Binary data" << file_set.DebugString() << std::endl;
+#ifdef __DEBUG__
+    std::cout << "Schema: " << file_set.DebugString() << std::endl;
+#endif
 
     std::vector<std::byte> binary_vector(
         reinterpret_cast<const std::byte *>(binary_data.data()),
@@ -63,6 +64,10 @@ namespace blackbox
 
 BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name, storage_profile_t storage_preset_profile, uint64_t max_cache_size) : _bb_debug_mode(debug_mode)
 {
+    if (!ns.empty() && ns[0] != '/') {
+        ns = "/" + ns; // 先頭にスラッシュを追加
+    }
+    
     tl_file::init();
     tl_file::create_node(ns, name);
     std::string blackbox_path = tl_file::get_rosbag_path(ns, name, file_name);
@@ -74,6 +79,7 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     _ns = ns;
     _name = name;
 
+    blackbox_path = blackbox_path + ".mcap";
     _out_file.open(blackbox_path, std::ios::binary);
     if (!_out_file.is_open())
     {
@@ -105,6 +111,8 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
 
     _writer = std::make_unique<mcap::McapWriter>();
     _writer->open(_out_file, options);
+
+    std::cout << "Crate BlackBox bag file: " << blackbox_path << std::endl;
 }
 
 std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const google::protobuf::Descriptor *descriptor)
@@ -140,7 +148,7 @@ std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const 
             mcap::Channel topic(topic_name, "protobuf", schema_id);
             _writer->addChannel(topic);
 
-            _channel_map[topic_name] = topic.id;aaaaaaaaa
+            _channel_map[topic_name] = topic.id;
             channel_id = topic.id;
         }
         else

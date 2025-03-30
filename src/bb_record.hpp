@@ -25,7 +25,7 @@ public:
     /// @param qos QoS
     /// @param drop_count ドロップ数（0はドロップなし）
     void init(BlackBox* bb, std::string record_name, size_t drop_count=0){
-        std::string ns = node->get_namespace();
+        std::string ns = bb->get_namespace();
         if(ns.size() != 1){
             ns += '/';
         }
@@ -39,8 +39,6 @@ public:
     void record(MessageT msg){
         if(IS_ENABLE_RECORD){
             this->record(msg, this->get_bb_tim());
-        }else{
-            this->record(msg, bb->get_bb_tim());
         }
     }
 
@@ -52,9 +50,6 @@ public:
         if(IS_ENABLE_RECORD)
             BlackBoxWriter<MessageT>::write(msg, tim);
     }
-
-private:
-    typename rclcpp::Publisher<MessageT>::SharedPtr _publisher;
 };
 
 }

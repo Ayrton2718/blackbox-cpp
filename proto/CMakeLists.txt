@@ -18,10 +18,18 @@ file(MAKE_DIRECTORY ${GEN_DIR})
 add_library(${TARGET_VALUE} STATIC)
 
 if(TARGET protobuf::protoc)
-    set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION ${protobuf_PACKAGE_FOLDER_RELEASE}/bin/protoc)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION ${protobuf_PACKAGE_FOLDER_DEBUG}/bin/protoc)
+    else()
+        set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION ${protobuf_PACKAGE_FOLDER_RELEASE}/bin/protoc)
+    endif()
 else()
     add_executable(protobuf::protoc IMPORTED)
-    set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION ${protobuf_PACKAGE_FOLDER_RELEASE}/bin/protoc)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION ${protobuf_PACKAGE_FOLDER_DEBUG}/bin/protoc)
+    else()
+        set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION ${protobuf_PACKAGE_FOLDER_RELEASE}/bin/protoc)
+    endif()
 endif()
 
 # Generate C++ source files from the .proto files using protobuf_generate
@@ -34,5 +42,5 @@ protobuf_generate(
 )
 
 target_include_directories(${TARGET_VALUE} PUBLIC ${GEN_DIR})
-target_link_libraries(proto_generated PUBLIC protobuf::libprotobuf)
+target_link_libraries(${TARGET_VALUE} PUBLIC protobuf::libprotobuf)
 
