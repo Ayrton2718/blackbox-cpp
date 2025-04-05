@@ -1,0 +1,185 @@
+{
+  "configById": {
+    "Plot!2e7tmxk": {
+      "paths": [
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/record/ns/multi_array.values[0]",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "X"
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/record/ns/multi_array.values[1]",
+          "enabled": true,
+          "color": "#f5774d",
+          "label": "Y"
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/record/ns/multi_array.values[2]",
+          "enabled": true,
+          "color": "#f7df71",
+          "label": "Z"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 5
+    },
+    "3D!1kufhj1": {
+      "cameraState": {
+        "distance": 15,
+        "perspective": false,
+        "phi": 59.99999999999941,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "thetaOffset": 90,
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000,
+        "logDepth": false
+      },
+      "followMode": "follow-none",
+      "followTf": "map",
+      "scene": {
+        "syncCamera": false,
+        "enableStats": false,
+        "labelScaleFactor": 1.5,
+        "ignoreColladaUpAxis": false,
+        "meshUpAxis": "y_up"
+      },
+      "transforms": {},
+      "topics": {
+        "/record/ns/scene": {
+          "visible": true
+        },
+        "/record/ns/laser_scan": {
+          "visible": true,
+          "colorField": "intensity",
+          "colorMode": "flat",
+          "colorMap": "turbo",
+          "decayTime": 0,
+          "flatColor": "#ff0000ff",
+          "pointSize": 3
+        }
+      },
+      "layers": {
+        "grid": {
+          "visible": true,
+          "frameLocked": true,
+          "label": "Grid",
+          "instanceId": "98eced65-bf88-4754-9eed-cab4623944b5",
+          "layerId": "foxglove.Grid",
+          "size": 20,
+          "divisions": 20,
+          "lineWidth": 0.2,
+          "color": "#ffffffff",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "frameId": "map"
+        }
+      },
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {},
+      "foxglovePanelTitle": "VIZ"
+    },
+    "RosOut!6powig": {
+      "searchTerms": [],
+      "minLogLevel": 1,
+      "nameFilter": {}
+    },
+    "Indicator!2gnq5jr": {
+      "path": "/record/ns/diag.values[0]",
+      "style": "bulb",
+      "fontSize": 30,
+      "fallbackColor": "#a30000",
+      "fallbackLabel": "X value is over!",
+      "rules": [
+        {
+          "operator": "=",
+          "rawValue": "true",
+          "color": "#68e24a",
+          "label": "OK"
+        }
+      ],
+      "foxglovePanelTitle": "X Diagnostic"
+    },
+    "Indicator!495hxxn": {
+      "path": "/record/ns/diag.values[1]",
+      "style": "bulb",
+      "fontSize": 30,
+      "fallbackColor": "#a30000",
+      "fallbackLabel": "Y value is over!",
+      "rules": [
+        {
+          "operator": "=",
+          "rawValue": "true",
+          "color": "#68e24a",
+          "label": "OK"
+        }
+      ],
+      "foxglovePanelTitle": "Y Diagnostic"
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "first": {
+      "first": "Plot!2e7tmxk",
+      "second": "3D!1kufhj1",
+      "direction": "row"
+    },
+    "second": {
+      "first": "RosOut!6powig",
+      "second": {
+        "first": "Indicator!2gnq5jr",
+        "second": "Indicator!495hxxn",
+        "direction": "column"
+      },
+      "direction": "row"
+    },
+    "direction": "column",
+    "splitPercentage": 64.60513796384396
+  }
+}

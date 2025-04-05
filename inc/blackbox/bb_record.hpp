@@ -36,19 +36,17 @@ public:
 
     /// @brief メッセージの送信
     /// @param msg メッセージ
-    void record(MessageT msg){
-        if(IS_ENABLE_RECORD){
-            this->record(msg, this->get_bb_tim());
-        }
+    void record(std::unique_ptr<MessageT> msg){
+            this->record(std::move(msg), blackbox::get_bb_tim());
     }
 
     /// @brief メッセージの送信
     /// @param msg メッセージ
     /// @param tim レコード用のタイムスタンプ
-    void record(MessageT msg, bb_time_t tim)
+    void record(std::unique_ptr<MessageT> msg, bb_time_t tim)
     {
         if(IS_ENABLE_RECORD)
-            BlackBoxWriter<MessageT>::write(msg, tim);
+            BlackBoxWriter<MessageT>::write(std::move(msg), tim);
     }
 };
 

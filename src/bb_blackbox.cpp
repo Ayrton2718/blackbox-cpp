@@ -4,6 +4,24 @@
 #include <google/protobuf/descriptor.pb.h>
 
 
+static void ProcessDependencies(const google::protobuf::FileDescriptor* file_descriptor,
+    google::protobuf::FileDescriptorSet* file_set,
+    std::set<std::string>& processed_files) 
+{
+    if (!file_descriptor) return;
+    if (processed_files.count(file_descriptor->name())) return;
+
+    processed_files.insert(file_descriptor->name());
+
+    google::protobuf::FileDescriptorProto file_proto;
+    file_descriptor->CopyTo(&file_proto);
+    file_set->add_file()->CopyFrom(file_proto);
+
+    for (int i = 0; i < file_descriptor->dependency_count(); ++i) {
+        ProcessDependencies(file_descriptor->dependency(i), file_set, processed_files);
+    }
+}
+
 static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::Descriptor *descriptor)
 {
     if (!descriptor)
@@ -19,28 +37,10 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
     }
 
     // FileDescriptorProto に変換
-    google::protobuf::FileDescriptorProto file_proto;
-    file_descriptor->CopyTo(&file_proto);
-
-    // FileDescriptorSet を作成して格納
     google::protobuf::FileDescriptorSet file_set;
-    file_set.add_file()->CopyFrom(file_proto);
-
-    // 依存しているファイルも追加
     std::set<std::string> processed_files;
-    processed_files.insert(file_descriptor->name());
 
-    for (int i = 0; i < file_descriptor->dependency_count(); i++)
-    {
-        const google::protobuf::FileDescriptor *dependency = file_descriptor->dependency(i);
-        if (processed_files.find(dependency->name()) == processed_files.end())
-        {
-            google::protobuf::FileDescriptorProto dep_proto;
-            dependency->CopyTo(&dep_proto);
-            file_set.add_file()->CopyFrom(dep_proto);
-            processed_files.insert(dependency->name());
-        }
-    }
+    ProcessDependencies(file_descriptor, &file_set, processed_files);
 
     std::string binary_data;
     if (!file_set.SerializeToString(&binary_data))
@@ -48,8 +48,11 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
         throw std::runtime_error("Failed to serialize FileDescriptorSet");
     }
 
-#ifdef __DEBUG__
+#ifdef BLACKBOX_SCHEMA_DEBUG
+    // デバッグ用にスキーマを表示
+    std::cout << "=============" << descriptor->full_name() << "===========" << std::endl;
     std::cout << "Schema: " << file_set.DebugString() << std::endl;
+    std::cout << "===================================" << std::endl;
 #endif
 
     std::vector<std::byte> binary_vector(
@@ -57,6 +60,7 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
         reinterpret_cast<const std::byte *>(binary_data.data()) + binary_data.size());
     return binary_vector;
 }
+
 
 
 namespace blackbox

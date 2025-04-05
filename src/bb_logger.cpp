@@ -7,21 +7,18 @@ namespace blackbox
 
 void LogRecorder::Logger::log(Logger* obj, const char* file, const char* func, size_t line, std::string str)
 {
-    auto now = obj->_handle->get_bb_tim();
-    std::chrono::seconds sec = std::chrono::duration_cast<std::chrono::seconds>(now);
-    std::chrono::nanoseconds nsec = now - sec;
+    auto now = get_bb_tim();
 
-    foxglove::Log msg;
-    auto stamp = new google::protobuf::Timestamp();
-    stamp->set_seconds(sec.count());
-    stamp->set_nanos(nsec.count());
-    msg.set_allocated_timestamp(stamp);
-    msg.set_name(obj->_tag_name);
-    msg.set_level(obj->_foxglove_level);
-    msg.set_file(std::string(file) + "." + func);
-    msg.set_line(line);
-    msg.set_message(str);
-    obj->_handle->write(msg);
+    std::unique_ptr<foxglove::Log> msg = std::make_unique<foxglove::Log>();
+    auto stamp = msg->mutable_timestamp();
+    stamp->set_seconds(now.tv_sec);
+    stamp->set_nanos(now.tv_nsec);
+    msg->set_name(obj->_tag_name);
+    msg->set_level(obj->_foxglove_level);
+    msg->set_file(std::string(file) + "." + func);
+    msg->set_line(line);
+    msg->set_message(str);
+    obj->_handle->write(std::move(msg), now);
 
     if(obj->_handle->_bb->_bb_debug_mode == debug_mode_t::DEBUG)
     {

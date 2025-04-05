@@ -7,13 +7,10 @@
 #include <vector>
 
 #include <mcap/mcap.hpp>
-#include <google/protobuf/descriptor.h>
+#include "bb_time.hpp"
 
 namespace blackbox
 {
-
-using bb_timepoint_t = std::chrono::steady_clock::time_point;
-using bb_time_t = std::chrono::nanoseconds;
 
 // mcapファイルの圧縮設定
 enum class storage_profile_t {
@@ -52,50 +49,29 @@ public:
             }
         }
 
-        void write(std::optional<MessageT> msg){
-            this->write(msg, this->get_bb_tim());
-        }
 
-        void write(std::optional<MessageT> msg, bb_time_t tim)
+        void write(std::unique_ptr<MessageT> msg, bb_time_t tim)
         {
-            if(msg.has_value()){
-            if((_handle != NULL) && ((_counter % _drop_count) == 0))
-            {
-                // メッセージのシリアライズ
-                std::vector<std::byte> payload(msg.value().ByteSizeLong()); // uint8_t を使用
-                msg.value().SerializeToArray(static_cast<void*>(payload.data()), payload.size());
-                
-                mcap::Message mcap_msg;
-                mcap_msg.channelId = _channel_id;
-                mcap_msg.sequence = 0;
-                mcap_msg.publishTime = mcap::Timestamp(tim.count());
-                mcap_msg.logTime = mcap::Timestamp(tim.count());
-                mcap_msg.data = payload.data(); // 修正: キャスト
-                mcap_msg.dataSize = payload.size();
+            if(msg != NULL && _handle != NULL){
+                if((_counter % _drop_count) == 0)
+                {
+                    // メッセージのシリアライズ
+                    std::vector<std::byte> payload(msg->ByteSizeLong()); // uint8_t を使用
+                    msg->SerializeToArray(static_cast<void*>(payload.data()), payload.size());
+                    
+                    mcap::Message mcap_msg;
+                    mcap_msg.channelId = _channel_id;
+                    mcap_msg.sequence = 0;
+                    mcap_msg.publishTime = this->timespec_to_timestamp(tim);
+                    mcap_msg.logTime = this->timespec_to_timestamp(get_bb_tim());
+                    mcap_msg.data = payload.data(); // 修正: キャスト
+                    mcap_msg.dataSize = payload.size();
 
-                _handle->write(mcap_msg);
-            }
+                    _handle->write(mcap_msg);
+                }
+                msg.reset();
             }
             _counter++;
-        }
-
-        bb_time_t get_bb_tim(void){
-            return _handle->get_bb_tim();
-        }
-
-        std::optional<MessageT> extractValue(MessageT value)
-        {
-            return value;
-        }
-
-        std::optional<MessageT> extractValue(MessageT* value)
-        {
-            return value ? std::optional<MessageT>(*value) : std::nullopt;
-        }
-
-        std::optional<MessageT> extractValue(std::shared_ptr<MessageT> value)
-        {
-            return value ? std::optional<MessageT>(*value) : std::nullopt;
         }
 
     private:
@@ -106,6 +82,12 @@ public:
 
         size_t      _counter;
         size_t      _drop_count;
+
+
+        mcap::Timestamp timespec_to_timestamp(bb_time_t ts) {
+            return mcap::Timestamp((uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec);
+        }
+
     };
 
 
@@ -145,14 +127,7 @@ public:
         return _name;
     }
 
-    bb_time_t get_bb_tim(void){
-        auto now  = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(now - _clock);
-    }
-
-    private:
-    bb_timepoint_t _clock;
-
+private:
     std::string _ns;
     std::string _name;
 
@@ -184,7 +159,7 @@ public:
     }
 };
 
-
 template<typename MessageT>
 using BlackBoxWriter = BlackBox::BlackBoxWriter<MessageT>;
+
 }

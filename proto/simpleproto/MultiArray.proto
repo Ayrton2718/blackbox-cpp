@@ -7,19 +7,25 @@ package simpleproto;
 message MultiArrayDouble {
   google.protobuf.Timestamp timestamp = 1; // Timestamp of the message
 
-  repeated double double_values = 2; // Array of double values
+  repeated double values = 2; // Array of double values
 }
 
 
 message MultiArrayFloat {
   google.protobuf.Timestamp timestamp = 1; // Timestamp of the message
 
-  repeated float float_values = 3;   // Array of float values
+  repeated float values = 3;   // Array of float values
 }
 
 
 message MultiArrayInt64 {
   google.protobuf.Timestamp timestamp = 1; // Timestamp of the message
 
-  repeated int64 int64_values = 4;   // Array of int64 values
+  repeated int64 values = 4;   // Array of int64 values
+}
+
+message MultiArrayBool {
+  google.protobuf.Timestamp timestamp = 1; // Timestamp of the message
+
+  repeated bool values = 4;   // Array of int64 values
 }
