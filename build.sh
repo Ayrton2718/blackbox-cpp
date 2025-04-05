@@ -10,14 +10,17 @@ BUILD_TYPE="Release"
 DEBUG_MACRO=""
 
 # Parse command-line arguments
-while getopts "BD" opt; do
+while getopts "BDV" opt; do
     case "$opt" in
         B) FORCE_REBUILD=true ;;
         D) 
             BUILD_TYPE="Debug"
+            ;;
+        V) 
             DEBUG_MACRO="-DCMAKE_VERBOSE_MAKEFILE=ON"
             ;;
-        *) echo "Usage: $0 [-B] [-D]"; exit 1 ;;
+        \?) echo "Usage: $0 [-B] [-D] [-V]"; exit 1 ;;
+        *) echo "Usage: $0 [-B] [-D] [-V]"; exit 1 ;;
     esac
 done
 
@@ -39,7 +42,7 @@ mkdir -p "$BUILD_DIR"
 mkdir -p "$INSTALL_DIR"
 
 # Install dependencies using Conan
-conan install . --build=missing
+conan install . --build=missing -sbuild_type="$BUILD_TYPE"
 
 # Navigate to build directory
 cd "$BUILD_DIR"

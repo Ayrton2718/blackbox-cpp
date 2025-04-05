@@ -1,5 +1,5 @@
-#include "bb_blackbox.hpp"
-#include "bb_file.hpp"
+#include "blackbox/bb_blackbox.hpp"
+#include "blackbox/bb_file.hpp"
 
 #include <google/protobuf/descriptor.pb.h>
 

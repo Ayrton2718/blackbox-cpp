@@ -1,7 +1,7 @@
 #pragma once
 
-#include "bb_blackbox.hpp"
-#include "bb_logger.hpp"
+#include "blackbox/bb_blackbox.hpp"
+#include "blackbox/bb_logger.hpp"
 
 namespace blackbox
 {

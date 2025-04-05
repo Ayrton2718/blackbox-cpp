@@ -9,7 +9,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include "foxglove/Log.pb.h"
 
-#include "blackbox.hpp"
+#include "blackbox/blackbox.hpp"
 
 // sample main function of logger using blackbox
 int main()
@@ -21,7 +21,7 @@ int main()
     blackbox::LogRecorder::Logger logger;
     logger.init(&bb_node, blackbox::log_type_t::INFO, "tag_name");
 
-    blackbox::Recorder<foxglove::Log> record;
+    blackbox::Record<foxglove::Log> record;
 
     // log
     TAGGER(&logger, "test log");

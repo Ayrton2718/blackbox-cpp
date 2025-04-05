@@ -2,7 +2,7 @@
 
 #include <string>
 #include <sys/time.h>
-#include "bb_blackbox.hpp"
+#include "blackbox/bb_blackbox.hpp"
 #include "foxglove/Log.pb.h"
 
 namespace blackbox

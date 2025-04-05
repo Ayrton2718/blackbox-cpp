@@ -1,6 +1,4 @@
-
-# 親のCMakeLists.txtから受け取った変数を表示
-message(STATUS "TARGET_VALUE in sub_project: ${TARGET_VALUE}")
+find_package(foxglove-schemas-protobuf REQUIRED)
 
 # Set directories for proto files and generated code
 set(PROTO_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -10,12 +8,10 @@ message(STATUS "PROTO_DIR in sub_project: ${PROTO_DIR}")
 message(STATUS "GEN_DIR in sub_project: ${GEN_DIR}")
 
 # Collect all .proto files from the proto directory
-file(GLOB PROTO_FILES "${PROTO_DIR}/foxglove/*.proto")
+file(GLOB PROTO_FILES "${PROTO_DIR}/simpleproto/*.proto")
 
 # Ensure the directory for generated files exists
 file(MAKE_DIRECTORY ${GEN_DIR})
-
-add_library(${TARGET_VALUE} STATIC)
 
 if(TARGET protobuf::protoc)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -32,15 +28,17 @@ else()
     endif()
 endif()
 
+add_library(proto_generated STATIC)
+
 # Generate C++ source files from the .proto files using protobuf_generate
 protobuf_generate(
-    TARGET ${TARGET_VALUE}
+    TARGET proto_generated
     LANGUAGE cpp
     PROTOC_OUT_DIR ${GEN_DIR}
     IMPORT_DIRS ${PROTO_DIR}
     PROTOS ${PROTO_FILES}
 )
 
-target_include_directories(${TARGET_VALUE} PUBLIC ${GEN_DIR})
-target_link_libraries(${TARGET_VALUE} PUBLIC protobuf::libprotobuf)
-
+# target_include_directories(proto_generated PRIVATE ${GEN_DIR})
+target_include_directories(proto_generated PUBLIC ${GEN_DIR})
+target_link_libraries(proto_generated PUBLIC foxglove-schemas-protobuf::foxglove-schemas-protobuf protobuf::libprotobuf)

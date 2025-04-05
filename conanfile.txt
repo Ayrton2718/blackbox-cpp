@@ -1,6 +1,6 @@
 [requires]
 mcap/1.4.1
-protobuf/5.27.0
+foxglove-schemas-protobuf/0.1.0
 [generators]
 CMakeDeps
 CMakeToolchain

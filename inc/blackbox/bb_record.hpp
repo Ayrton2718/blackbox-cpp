@@ -3,8 +3,8 @@
 #include <string>
 #include <sys/time.h>
 
-#include "bb_blackbox.hpp"
-#include "bb_node.hpp"
+#include "blackbox/bb_blackbox.hpp"
+#include "blackbox/bb_node.hpp"
 
 namespace blackbox
 {

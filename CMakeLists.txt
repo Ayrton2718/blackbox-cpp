@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(mcap_serializer)
+project(blackbox_cpp)
 
 include(${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/generators/conan_toolchain.cmake)
 
@@ -12,18 +12,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -rdynamic")
 endif()
 
-set(TARGET_VALUE proto_generated)
 add_subdirectory(proto)
 
 # set source directory and files
-set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
-message(STATUS "SOURCE_DIR: ${SOURCE_DIR}")
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB SOURCES ${SOURCE_DIR}/*.cpp)
 
 add_library(blackbox ${SOURCES})
-target_include_directories(blackbox PUBLIC ${SOURCE_DIR})
+target_include_directories(blackbox PRIVATE ${SOURCE_DIR})
+target_include_directories(blackbox PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)
 target_link_libraries(blackbox PUBLIC mcap::mcap proto_generated)
 
-add_executable(example.out ${CMAKE_SOURCE_DIR}/example/example.cpp)
-target_include_directories(example.out PUBLIC ${SOURCE_DIR})
-target_link_libraries(example.out PUBLIC mcap::mcap blackbox)
+add_executable(example.out ${CMAKE_CURRENT_SOURCE_DIR}/example/example.cpp)
+target_link_libraries(example.out PUBLIC blackbox)
