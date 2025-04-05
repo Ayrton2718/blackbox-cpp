@@ -4,7 +4,6 @@
 #include <sys/time.h>
 
 #include "blackbox/bb_blackbox.hpp"
-#include "blackbox/bb_node.hpp"
 
 namespace blackbox
 {

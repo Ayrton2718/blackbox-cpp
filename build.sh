@@ -45,7 +45,7 @@ mkdir -p "$INSTALL_DIR"
 conan install . --build=missing -sbuild_type="$BUILD_TYPE"
 
 # Run CMake with the selected build type and optional debug macro
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -S/home/sen/git_tmp/blackbox-cpp -B/home/sen/git_tmp/blackbox-cpp/build/$BUILD_TYPE -G "Unix Makefiles"
+cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -S . -B build/$BUILD_TYPE -G "Unix Makefiles"
 
 # Build project
 cmake --build /home/sen/git_tmp/blackbox-cpp/build/$BUILD_TYPE --parallel 12

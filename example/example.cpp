@@ -165,29 +165,29 @@ std::unique_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
 int main()
 {
     // create blackbox node
-    blackbox::BlackBoxNode bb_node("ns", "name", blackbox::debug_mode_t::DEBUG);
+    blackbox::BlackBox bb("ns", "name", blackbox::debug_mode_t::DEBUG);
 
     // create logger
-    blackbox::LogRecorder::Logger info;
-    info.init(&bb_node, blackbox::log_type_t::INFO, "position");
+    blackbox::Logger info;
+    info.init(&bb, blackbox::log_type_t::INFO, "position");
 
-    blackbox::LogRecorder::Logger error;
-    error.init(&bb_node, blackbox::log_type_t::ERR, "over_position");
+    blackbox::Logger error;
+    error.init(&bb, blackbox::log_type_t::ERR, "over_position");
 
     blackbox::Record<foxglove::FrameTransform> frame_record;
-    frame_record.init(&bb_node, "tf");
+    frame_record.init(&bb, "tf");
 
     blackbox::Record<foxglove::SceneUpdate> scene_record;
-    scene_record.init(&bb_node, "scene");
+    scene_record.init(&bb, "scene");
 
     blackbox::Record<foxglove::LaserScan> laser_record;
-    laser_record.init(&bb_node, "laser_scan");
+    laser_record.init(&bb, "laser_scan");
 
     blackbox::Record<simpleproto::MultiArrayDouble> array_record;
-    array_record.init(&bb_node, "multi_array");
+    array_record.init(&bb, "multi_array");
 
     blackbox::Record<simpleproto::MultiArrayBool> diag_record;
-    diag_record.init(&bb_node, "diag");
+    diag_record.init(&bb, "diag");
 
     auto start_time = std::chrono::steady_clock::now();
     auto end_time = start_time + std::chrono::seconds(10);  // Run for 10 seconds
@@ -226,7 +226,6 @@ int main()
             TAGGER(&info, "In box: Position (%.2f, %.2f, %.2f)", x, y, z);
         }
         diag_record.record(std::move(diag_msg));
-
 
         // Wait 1 second before next iteration
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

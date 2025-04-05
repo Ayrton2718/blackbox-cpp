@@ -9,7 +9,7 @@
             "includePath": [
                 "/usr/include/**",
                 "${workspaceFolder}/inc/**",
-                "${workspaceFolder}/install/**",
+                "${workspaceFolder}/proto/**",
                 "~/.conan2/**"
             ],
             "intelliSenseMode": "gcc-x64",

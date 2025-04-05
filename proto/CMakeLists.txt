@@ -2,7 +2,7 @@ find_package(foxglove-schemas-protobuf REQUIRED)
 
 # Set directories for proto files and generated code
 set(PROTO_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-set(GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/proto")
+set(GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generated")
 
 message(STATUS "PROTO_DIR in sub_project: ${PROTO_DIR}")
 message(STATUS "GEN_DIR in sub_project: ${GEN_DIR}")

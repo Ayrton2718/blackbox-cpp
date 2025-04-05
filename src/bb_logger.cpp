@@ -5,7 +5,7 @@
 namespace blackbox
 {
 
-void LogRecorder::Logger::log(Logger* obj, const char* file, const char* func, size_t line, std::string str)
+void Logger::log(Logger* obj, const char* file, const char* func, size_t line, std::string str)
 {
     auto now = get_bb_tim();
 
@@ -18,9 +18,9 @@ void LogRecorder::Logger::log(Logger* obj, const char* file, const char* func, s
     msg->set_file(std::string(file) + "." + func);
     msg->set_line(line);
     msg->set_message(str);
-    obj->_handle->write(std::move(msg), now);
+    obj->write(std::move(msg), now);
 
-    if(obj->_handle->_bb->_bb_debug_mode == debug_mode_t::DEBUG)
+    if(obj->_bb->_bb_debug_mode == debug_mode_t::DEBUG)
     {
         switch(obj->_log_type)
         {
@@ -47,7 +47,7 @@ void LogRecorder::Logger::log(Logger* obj, const char* file, const char* func, s
 }
 
 
-void LogRecorder::Logger::log(Logger* obj, const char* file, const char* func, size_t line, const char* fmt, ...)
+void Logger::log(Logger* obj, const char* file, const char* func, size_t line, const char* fmt, ...)
 {
     std::string str;
     va_list ap;

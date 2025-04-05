@@ -83,26 +83,17 @@ public:
         size_t      _counter;
         size_t      _drop_count;
 
-
         mcap::Timestamp timespec_to_timestamp(bb_time_t ts) {
             return mcap::Timestamp((uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec);
         }
-
     };
-
 
 public:
     const debug_mode_t    _bb_debug_mode;
 
     /// @brief 
-    /// @tparam MessageT 
-    /// @param node rclcpp::Nodeのポインタ
-    /// @param storage_preset_profile 
-    /// @param max_cache_size
-
-
-    /// @brief 
-    /// @param node rclcpp::Nodeのポインタ
+    /// @param ns 名前空間を指定する．
+    /// @param name ノード名を指定する．
     /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
     /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
     /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
@@ -135,7 +126,10 @@ private:
     std::unordered_map<std::string, mcap::ChannelId> _channel_map;
 
     std::ofstream _out_file;
-    std::unique_ptr<mcap::McapWriter> _writer = NULL;
+    std::shared_ptr<mcap::McapWriter> _writer = NULL;
+    
+    static std::mutex _sig_mutex;
+    static std::vector<std::shared_ptr<mcap::McapWriter>> _sig_queue;
 
     size_t _err_count = 0;
 
@@ -157,6 +151,8 @@ private:
             }
         }
     }
+
+    static void handler(int sig);
 };
 
 template<typename MessageT>

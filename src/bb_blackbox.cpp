@@ -1,7 +1,14 @@
 #include "blackbox/bb_blackbox.hpp"
+
+#include <csignal>
+#include <google/protobuf/descriptor.pb.h>
 #include "blackbox/bb_file.hpp"
 
-#include <google/protobuf/descriptor.pb.h>
+namespace blackbox
+{
+
+std::mutex BlackBox::_sig_mutex;
+std::vector<std::shared_ptr<mcap::McapWriter>> BlackBox::_sig_queue;
 
 
 static void ProcessDependencies(const google::protobuf::FileDescriptor* file_descriptor,
@@ -62,10 +69,6 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
 }
 
 
-
-namespace blackbox
-{
-
 BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name, storage_profile_t storage_preset_profile, uint64_t max_cache_size) : _bb_debug_mode(debug_mode)
 {
     if (!ns.empty() && ns[0] != '/') {
@@ -113,11 +116,16 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
         break;
     }
 
-    _writer = std::make_unique<mcap::McapWriter>();
+    _writer = std::make_shared<mcap::McapWriter>();
     _writer->open(_out_file, options);
 
     std::cout << "Crate BlackBox bag file: " << blackbox_path << std::endl;
+
+    std::lock_guard<std::mutex> lock(_sig_mutex);
+    _sig_queue.push_back(_writer);
+    signal(SIGINT, BlackBox::handler);
 }
+
 
 std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const google::protobuf::Descriptor *descriptor)
 {
@@ -163,6 +171,22 @@ std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const 
         return std::make_pair(true, channel_id);
     }
     return std::make_pair(false, 0);
+}
+
+void BlackBox::handler(int sig)
+{
+    std::cerr << "SIGINT received, exiting..." << std::endl;
+
+    for (auto &sig_instance : _sig_queue)
+    {
+        if (sig_instance != NULL)
+        {
+            std::cerr << "Closing blackbox bag file..." << std::endl;
+            sig_instance->close();
+        }
+    }
+
+    exit(sig);
 }
 
 }
