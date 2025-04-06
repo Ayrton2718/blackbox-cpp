@@ -4,7 +4,6 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 # Default values
 BUILD_DIR="build"
-INSTALL_DIR="install"
 FORCE_REBUILD=false
 BUILD_TYPE="Release"
 DEBUG_MACRO=""
@@ -29,20 +28,9 @@ if [ "$FORCE_REBUILD" = true ]; then
     if [ -d "$BUILD_DIR" ]; then
         echo "Cleaning previous build..."
         rm -rf "$BUILD_DIR"
-    fi
-
-    if [ -d "$INSTALL_DIR" ]; then
-        echo "Cleaning previous install..."
-        rm -rf "$INSTALL_DIR"
+        ./install.sh
     fi
 fi
-
-# Ensure build directory exists
-mkdir -p "$BUILD_DIR"
-mkdir -p "$INSTALL_DIR"
-
-# Install dependencies using Conan
-conan install . --build=missing -sbuild_type="$BUILD_TYPE"
 
 # Run CMake with the selected build type and optional debug macro
 cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -S . -B build/$BUILD_TYPE -G "Unix Makefiles"

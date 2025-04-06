@@ -25,15 +25,19 @@ BlackBox-Cpp を活用すれば、さまざまな種類のログをひとつの 
 [Foxglove Studio のインストール](https://foxglove.dev/download)
 
 ## How To Install
+BlackBox commandのインストール
 ```bash
 sudo apt install -y ansible
-```
-
-ros2ワークスペースのsrc内
-```bash
 git clone https://github.com/Ayrton2718/blackbox.git
 cd blackbox
 ansible-playbook --ask-become-pass ansible/dev.yml
+```
+
+ビルド＆RUN
+```bash
+./conan_install.sh
+./build.sh
+./build/Release/example.out
 ```
 
 ## How To Use
@@ -96,7 +100,7 @@ enum log_type_t{
 
 ```cpp
 blackbox::Record<foxglove::FrameTransform> frame_record;
-frame_record.init(&bb_node, "tf");
+frame_record.init(&bb_node, "/tf");
 
 auto frame_msg = create_frame_transform_msg(x, y, z);
 frame_record.record(std::move(frame_msg));
@@ -122,45 +126,93 @@ frame_record.record(std::move(frame_msg));
 [example.cpp](example/example.cpp)
 
 
-## Management Log Files
+## Management Log Files & BlackBox commands
 直近のログファイルは`/tmp/blackbox_log`に保存されます。  
-過去のログは`/var/tmp/blackbox_archive`に保存されます。  
-`/tmp/blackbox_log`内には、ノードごとに分かれてMcapファイルが保存されます。
+過去のログは`/var/tmp/blackbox_archive`に保存されます。 
 
 ### blackbox_create
 ログファイルの保存場所`/tmp/blackbox_log`を作成します。  
-プログラムの実行前に必ずこのコマンドを実行する必要があります。
+**プログラムの実行前に必ずこのコマンドを実行する必要があります。**
+起動用のBashファイルを作ることを推奨します。
 
-launchファイルにこのような行を追加すれば、自動的にログファイルの保存場所を作成することができます。
-
-```python
-import subprocess
-subprocess.run(["blackbox_create"])
+```shell
+#!/bin/bash
+blackbox_create
+./build/Release/example.out
 ```
 
 ### blackbox_archive
-直近のログファイル`/tmp/blackbox_log`を`/var/tmp/blackbox_archive`に移動させます。  
-`BLACKBOX`という名前の外部ディスクがあると、そちらに保存されるようになります。
+ログファイル`/tmp/blackbox_log`を`/var/tmp/blackbox_archive`に移動させます。
+50件以上のアーカイブがあると、一番古いものが削除されていきます[件数の変更方法](ansible/roles/blackbox/script/blackbox_archive)。
 
-こちらもlaunchファイルに追加することで、自動的にログファイルがアーカイブされるようになります。  
-注意点としては、ログファイルの大きさによっては、launchの起動が遅くなる可能性があります。  
-対策として、ros2をsystemdで起動するようにし、サービス終了時にアーカイブするようにすることを推奨します。
+`BLACKBOX`という名前の外部ディスクが`/media/$USER/BLACKBOX`にあると、そちらに保存されるようになります。
 
-```python
-import subprocess
-subprocess.run(["blackbox_archive"])
-subprocess.run(["blackbox_create"])
+```shell
+#!/bin/bash
+blackbox_archive
+blackbox_create
+./build/Release/example.out
 ```
+
+注意点としては、ログファイルの大きさによっては、`blackbox_archive`に時間がかかる可能性があります。  
+対策として、プログラム終了時に、`run.sh`やsystemdなどでサービス終了時にアーカイブすることを推奨します。
+
+```shell
+#!/bin/bash
+
+# クリーンアップ関数を定義
+cleanup() {
+    echo "CTRL-C を検知しました。ログをアーカイブします..."
+    blackbox_archive
+    exit 1
+}
+
+# SIGINT（CTRL-C）を捕まえてクリーンアップ関数を呼ぶ
+trap cleanup SIGINT
+
+blackbox_create
+./build/Release/example.out
+blackbox_archive
+```
+
+```systemd
+[Unit]
+Description=Robot Launcher
+
+[Service]
+User=user
+Group=user
+Type=simple
+ExecStartPost=/usr/bin/blackbox_create
+ExecStart=/bin/bash -c '\
+    ./home/user/a.out'
+ExecStop=/bin/bash -c '/bin/kill -SIGINT ${MAINPID} && sleep 1s'
+ExecStopPost=/usr/bin/blackbox_archive
+
+Restart=on-failure
+StartLimitBurst=3
+KillMode=control-group
+TimeoutStopSec=5s
+RestartSec=10s
+RemainAfterExit=false
+
+[Install]
+```
+
 
 ### blackbox_merge
 `/tmp/blackbox_log`にある、ノードごとに分かれているMcapを一つにまとめることができます。  
 一つになったmcapファイルは、`merged.mcap`として出力されます。
 
+最後に実行したものに対して行う
 ```bash
-# 最後に実行したものに対して行う
 blackbox_merge '/tmp/blackbox_log' 
-# 過去のBlackBoxに対して
+```
+過去のBlackBoxに対して
+```bash
 blackbox_merge '/var/tmp/blackbox_archive/blackbox_2024-03-24_21-24-14' 
-# 現在のディレクトリに対して
+```
+現在のディレクトリに対して
+```bash
 blackbox_merge .
 ```
