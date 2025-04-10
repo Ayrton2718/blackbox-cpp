@@ -25,6 +25,8 @@ BlackBox-Cpp を活用すれば、さまざまな種類のログをひとつの 
 [Foxglove Studio のインストール](https://foxglove.dev/download)
 
 ## How To Install
+[自分のCMake_Workspaceに追加する](#use-blackbox-cpp-in-your-workspace)
+
 BlackBox commandのインストール
 ```bash
 sudo apt install -y ansible
@@ -35,7 +37,7 @@ ansible-playbook --ask-become-pass ansible/dev.yml
 
 ビルド＆RUN
 ```bash
-./conan_install.sh
+conan install . --build=missing -sbuild_type="$BUILD_TYPE"
 ./build.sh
 ./build/Release/example.out
 ```
@@ -215,4 +217,46 @@ blackbox_merge '/var/tmp/blackbox_archive/blackbox_2024-03-24_21-24-14'
 現在のディレクトリに対して
 ```bash
 blackbox_merge .
+```
+## Using BlackBox-Cpp in Your Workspace
+
+### 1. Install Conan Libraries
+
+Navigate to your workspace directory and run the installation script:
+
+```shell
+cd ~/<path-to-your-workspace>/<library-path>
+git clone https://github.com/Ayrton2718/blackbox-cpp.git　<library-path>/blackbox-cpp
+bash <library-path>/blackbox-cpp/conan_install.sh
+```
+
+If you are using **Ninja** as the build system, use the following command:
+
+```shell
+bash <library-path>/blackbox-cpp/conan_install.sh -n
+```
+
+---
+
+### 2. Add BlackBox to your CMake file
+
+Include the BlackBox directory in your `CMakeLists.txt`:
+
+```cmake
+add_subdirectory(<library-path>/blackbox-cpp)
+
+target_link_libraries(<target> PUBLIC
+    blackbox
+)
+```
+
+---
+
+### 3. Configure CMake with Conan Toolchain
+
+Add the `-DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake` option to your CMake command:
+
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release -S . -B build/Release -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake
+cmake --build ./build/$BUILD_TYPE
 ```

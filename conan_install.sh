@@ -1,19 +1,43 @@
 #!/bin/bash
 
-set -e  # Exit immediately if a command exits with a non-zero status
+DIR_NAME="$(dirname $0)"
 
-# Default values
+# デフォルト値
 BUILD_TYPE="Release"
+BUILD_DIR="."
+USE_NINJA=false
 
-# Parse command-line arguments
-while getopts "D" opt; do
+# コマンドライン引数の解析
+while getopts "Db:n" opt; do
     case "$opt" in
-        D) 
+        D)
             BUILD_TYPE="Debug"
             ;;
-        \?) echo "Usage: $0 [-D]"; exit 1 ;;
-        *) echo "Usage: $0 [-D]"; exit 1 ;;
+        b)
+            BUILD_DIR="$OPTARG"
+            ;;
+        n)
+            USE_NINJA=true
+            ;;
+        \?)
+            echo "Usage: $0 [-D] [-b build_directory] [-n]"
+            exit 1
+            ;;
+        *)
+            echo "Usage: $0 [-D] [-b build_directory] [-n]"
+            exit 1
+            ;;
     esac
 done
 
-conan install . --build=missing -sbuild_type="$BUILD_TYPE"
+conan profile detect --name=blackbox_cpp --force
+
+if $USE_NINJA; then
+    echo -e "\n[conf]\ntools.cmake.cmaketoolchain:generator=Ninja" >> ~/.conan2/profiles/blackbox_cpp
+fi
+
+echo "Build type: $BUILD_TYPE"
+echo "Build directory: $BUILD_DIR"
+echo "Using Ninja: $USE_NINJA"
+
+conan install $DIR_NAME --profile blackbox_cpp --build=missing -sbuild_type="$BUILD_TYPE" -of="$BUILD_DIR"

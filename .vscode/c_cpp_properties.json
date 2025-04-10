@@ -10,7 +10,7 @@
                 "/usr/include/**",
                 "${workspaceFolder}/inc/**",
                 "${workspaceFolder}/proto/**",
-                "~/.conan2/**"
+                "~/.conan2/p/**"
             ],
             "intelliSenseMode": "gcc-x64",
             "compilerPath": "/usr/bin/g++",

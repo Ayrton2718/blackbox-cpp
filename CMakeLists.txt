@@ -1,15 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 project(blackbox_cpp)
 
-
 # Find dependencies
 find_package(mcap REQUIRED)
 find_package(protobuf REQUIRED)
-
-# if CMAKE_BUILD_TYPE is Debug I want to add -g -rdynamic to the flags
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -rdynamic -DBLACKBOX_SCHEMA_DEBUG")
-endif()
 
 add_subdirectory(proto)
 

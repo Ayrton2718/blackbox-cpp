@@ -28,12 +28,17 @@ if [ "$FORCE_REBUILD" = true ]; then
     if [ -d "$BUILD_DIR" ]; then
         echo "Cleaning previous build..."
         rm -rf "$BUILD_DIR"
-        ./install.sh
+
+        if [ "$BUILD_TYPE" = "Debug" ]; then
+            ./conan_install.sh -D
+        else
+            ./conan_install.sh
+        fi
     fi
 fi
 
 # Run CMake with the selected build type and optional debug macro
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -S . -B build/$BUILD_TYPE -G "Unix Makefiles"
+cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -S . -B build/$BUILD_TYPE
 
 # Build project
-cmake --build /home/sen/git_tmp/blackbox-cpp/build/$BUILD_TYPE --parallel 12
+cmake --build ./build/$BUILD_TYPE --parallel 12
