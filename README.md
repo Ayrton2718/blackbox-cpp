@@ -39,8 +39,11 @@ ansible-playbook --ask-become-pass ansible/dev.yml
 ```bash
 conan install . --build=missing -sbuild_type="$BUILD_TYPE"
 ./build.sh
-./build/Release/example.out
+./run.sh
 ```
+
+うまく行けば、`/var/tmp/blackbox_archive`にログが保存されているはずです。
+(archiveがうまく行かなかった場合は、`/tmp/blackbox_log`に格納されます)
 
 ## How To Use
 このライブラリは、`BlackBox` のインスタンスを作成して使用します。  
@@ -108,8 +111,11 @@ auto frame_msg = create_frame_transform_msg(x, y, z);
 frame_record.record(std::move(frame_msg));
 ```
 
-> **ポイント：** 実行中は **Foxglove Bridge** を使ってリアルタイムで確認、終了後は `.mcap` ファイルを Foxglove Studio で解析できます。
+レコードできる型は、Foxgloveのprotobuf msgです。(https://github.com/foxglove/foxglove-sdk/tree/main/schemas/proto/foxglove)  
+Foxgloveのprotobufで保存したデータは、Foxglove studioでデフォルトで用意されている[Panel](https://docs.foxglove.dev/docs/visualization/panels/introduction)で可視化できます。
 
+また、自分で作成したprotobuf型をレコードすることができます。
+例）[simpleproto](proto/simpleproto)
 
 ## Example
 
@@ -132,7 +138,10 @@ frame_record.record(std::move(frame_msg));
 直近のログファイルは`/tmp/blackbox_log`に保存されます。  
 過去のログは`/var/tmp/blackbox_archive`に保存されます。 
 
-### blackbox_create
+下記に、ログフォルダのcreate, archive, mergeのコマンドを紹介します。
+これらのコマンドは、ansibleによりインストールされます。
+
+### blackbox_create command
 ログファイルの保存場所`/tmp/blackbox_log`を作成します。  
 **プログラムの実行前に必ずこのコマンドを実行する必要があります。**
 起動用のBashファイルを作ることを推奨します。
@@ -143,7 +152,7 @@ blackbox_create
 ./build/Release/example.out
 ```
 
-### blackbox_archive
+### blackbox_archive command
 ログファイル`/tmp/blackbox_log`を`/var/tmp/blackbox_archive`に移動させます。
 50件以上のアーカイブがあると、一番古いものが削除されていきます[件数の変更方法](ansible/roles/blackbox/script/blackbox_archive)。
 
@@ -202,7 +211,7 @@ RemainAfterExit=false
 ```
 
 
-### blackbox_merge
+### blackbox_merge command
 `/tmp/blackbox_log`にある、ノードごとに分かれているMcapを一つにまとめることができます。  
 一つになったmcapファイルは、`merged.mcap`として出力されます。
 
