@@ -24,7 +24,7 @@ BlackBox-Cpp を活用すれば、さまざまな種類のログをひとつの 
 詳しくは以下のリンクからアプリケーションをダウンロードしてください：  
 [Foxglove Studio のインストール](https://foxglove.dev/download)
 
-## How To Install
+## Get Started
 [自分のCMake_Workspaceに追加する](#use-blackbox-cpp-in-your-workspace)
 
 BlackBox commandのインストール
@@ -44,6 +44,10 @@ conan install . --build=missing -sbuild_type="$BUILD_TYPE"
 
 うまく行けば、`/var/tmp/blackbox_archive`にログが保存されているはずです。
 (archiveがうまく行かなかった場合は、`/tmp/blackbox_log`に格納されます)
+
+ログが開けたら、サンプルの動画のような、パネルのレイアウトをFoxgloveにロードさせます。
+- [Sample layout File](example/blackbox_foxglove_sample.json)
+- [Import Layout](https://docs.foxglove.dev/docs/visualization/layouts#import-and-export)
 
 ## How To Use
 このライブラリは、`BlackBox` のインスタンスを作成して使用します。  
@@ -117,7 +121,7 @@ Foxgloveのprotobufで保存したデータは、Foxglove studioでデフォル�
 また、自分で作成したprotobuf型をレコードすることができます。
 例）[simpleproto](proto/simpleproto)
 
-## Example
+## Sample Code
 
 このサンプルアプリケーションでは次の処理を行います：
 - 円運動をシミュレーション
