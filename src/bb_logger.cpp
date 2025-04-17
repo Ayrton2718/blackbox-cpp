@@ -18,7 +18,7 @@ void Logger::log(Logger* obj, const char* file, const char* func, size_t line, s
     msg->set_file(std::string(file) + "." + func);
     msg->set_line(line);
     msg->set_message(str);
-    obj->write(std::move(msg), now);
+    obj->write(msg.get(), now);
 
     if(obj->_bb->_bb_debug_mode == debug_mode_t::DEBUG)
     {

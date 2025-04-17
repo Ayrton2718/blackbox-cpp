@@ -50,7 +50,7 @@ public:
         }
 
 
-        void write(std::unique_ptr<MessageT> msg, bb_time_t tim)
+        void write(MessageT* msg, bb_time_t tim)
         {
             if(msg != NULL && _handle != NULL){
                 if((_counter % _drop_count) == 0)
@@ -69,7 +69,6 @@ public:
 
                     _handle->write(mcap_msg);
                 }
-                msg.reset();
             }
             _counter++;
         }
@@ -105,6 +104,7 @@ public:
         if(_writer != NULL)
         {
             _writer->close();
+            _writer->terminate();
         }
     }
 

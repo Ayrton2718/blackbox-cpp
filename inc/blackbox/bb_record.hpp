@@ -33,19 +33,18 @@ public:
             BlackBoxWriter<MessageT>::BlackBoxWriter_cons(bb, "/record" + ns + record_name, drop_count);
     }
 
-    /// @brief メッセージの送信
-    /// @param msg メッセージ
-    void record(std::unique_ptr<MessageT> msg){
-            this->record(std::move(msg), blackbox::get_bb_tim());
-    }
 
     /// @brief メッセージの送信
     /// @param msg メッセージ
     /// @param tim レコード用のタイムスタンプ
-    void record(std::unique_ptr<MessageT> msg, bb_time_t tim)
+    void record(MessageT* msg, bb_time_t tim = blackbox::get_bb_tim())
     {
         if(IS_ENABLE_RECORD)
-            BlackBoxWriter<MessageT>::write(std::move(msg), tim);
+            BlackBoxWriter<MessageT>::write(msg, tim);
+    }
+
+    void record(std::shared_ptr<MessageT> msg, bb_time_t tim = blackbox::get_bb_tim()){
+        this->record(msg.get(), tim);
     }
 };
 

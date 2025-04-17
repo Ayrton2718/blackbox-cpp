@@ -82,7 +82,7 @@ std::unique_ptr<simpleproto::MultiArrayDouble> create_multi_array_msg(double x, 
     array_msg->add_values(x);
     array_msg->add_values(y);
     array_msg->add_values(z);
-    return array_msg;
+    return std::move(array_msg);
 }
 
 std::unique_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, double y, double z)
@@ -206,12 +206,12 @@ int main()
         auto laser_msg = create_laser_scan_msg();
 
         // Record messages
-        frame_record.record(std::move(frame_msg));
-        scene_record.record(std::move(scene_msg));
-        array_record.record(std::move(array_msg));
-        laser_record.record(std::move(laser_msg));
+        frame_record.record(frame_msg.get());
+        scene_record.record(scene_msg.get());
+        array_record.record(array_msg.get());
+        laser_record.record(laser_msg.get());
 
-        auto diag_msg = std::make_unique<simpleproto::MultiArrayBool>();
+        auto diag_msg = std::make_shared<simpleproto::MultiArrayBool>();
         // Is x in box
         diag_msg->add_values(x > -BOX_SIZE && x < BOX_SIZE);
         // Is y in box
@@ -225,7 +225,7 @@ int main()
         {
             TAGGER(&info, "In box: Position (%.2f, %.2f, %.2f)", x, y, z);
         }
-        diag_record.record(std::move(diag_msg));
+        diag_record.record(diag_msg);
 
         // Wait 1 second before next iteration
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

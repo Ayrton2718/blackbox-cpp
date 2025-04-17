@@ -97,6 +97,7 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     mcap::McapWriterOptions options("protobuf");
     options.noChunkCRC = true;
     options.compression = mcap::Compression::None;
+    options.chunkSize = max_cache_size;
 
     switch (storage_preset_profile)
     {
@@ -112,7 +113,6 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     case storage_profile_t::zstd_small:
         options.compression = mcap::Compression::Zstd;
         options.compressionLevel = mcap::CompressionLevel::Slowest;
-        options.chunkSize = max_cache_size;
         break;
     }
 
@@ -179,12 +179,16 @@ void BlackBox::handler(int sig)
 
     for (auto &sig_instance : _sig_queue)
     {
-        if (sig_instance != NULL)
+        if (sig_instance != nullptr)
         {
             std::cerr << "Closing blackbox bag file..." << std::endl;
             sig_instance->close();
+            sig_instance->terminate();
+            sig_instance.reset();
         }
     }
+
+    _sig_queue.clear();
 
     exit(sig);
 }
