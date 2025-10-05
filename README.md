@@ -8,7 +8,7 @@ BlackBox-Cpp を活用すれば、さまざまな種類のログをひとつの 
 - アプリケーションが生成する独自メッセージ
 - 可視化のためのログデータ
 
-作成した rosbag ファイルは、クロスプラットフォーム可視化ツールである [Foxglove Studio](https://foxglove.dev/) を使って解析・可視化できます。
+作成した rosbag ファイルは、クロスプラットフォーム可視化ツールである [Foxglove Studio](https://foxglove.dev/)/[Lichtblick](https://github.com/lichtblick-suite/lichtblick)を使って解析・可視化できます。
 
 [example.cpp](example/example.cpp)
 ![blackbox-cpp_foxglove_sample](docs/blackbox-cpp_foxglove_sample.webp)
@@ -22,7 +22,9 @@ BlackBox-Cpp を活用すれば、さまざまな種類のログをひとつの 
 さらに、再生時のフレームレートも設定画面で調整可能です。
 
 詳しくは以下のリンクからアプリケーションをダウンロードしてください：  
-[Foxglove Studio のインストール](https://foxglove.dev/download)
+[Foxglove Studio のインストール](https://foxglove.dev/download)  
+or  
+[Lichtblick](https://github.com/lichtblick-suite/lichtblick/releases)
 
 ## Get Started
 [自分のCMake_Workspaceに追加する](#use-blackbox-cpp-in-your-workspace)
