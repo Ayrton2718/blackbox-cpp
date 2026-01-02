@@ -69,18 +69,18 @@ public:
 
         void write(MessageT* msg, bb_time_t tim)
         {
-            if(msg != NULL && _handle != nullptr){
+            if(msg != nullptr && _handle != nullptr){
                 if((_counter % _drop_count) == 0)
                 {
-                    std::string data = msg->SerializeAsString();
+                    msg->SerializeToString(&_serialize_buffer);
                     
                     mcap::Message mcap_msg;
                     mcap_msg.channelId = _channel_id;
                     mcap_msg.sequence = 0;
-                    mcap_msg.publishTime = this->timespec_to_timestamp(tim);
-                    mcap_msg.logTime = this->timespec_to_timestamp(get_bb_tim());
-                    mcap_msg.data = reinterpret_cast<const std::byte*>(data.data());
-                    mcap_msg.dataSize = data.size();
+                    mcap_msg.publishTime = timespec_to_timestamp(tim);
+                    mcap_msg.logTime = timespec_to_timestamp(get_bb_tim());
+                    mcap_msg.data = reinterpret_cast<const std::byte*>(_serialize_buffer.data());
+                    mcap_msg.dataSize = _serialize_buffer.size();
 
                     _handle->write(mcap_msg);
                 }
@@ -91,14 +91,16 @@ public:
     private:
         std::shared_ptr<BlackBox> _handle = nullptr;
         std::string     _topic_name;
+        std::string     _serialize_buffer;  // Reusable buffer to avoid allocations
 
         mcap::ChannelId _channel_id = 0;
 
         size_t      _counter;
         size_t      _drop_count;
 
-        mcap::Timestamp timespec_to_timestamp(bb_time_t ts) {
-            return mcap::Timestamp((uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec);
+        static mcap::Timestamp timespec_to_timestamp(bb_time_t ts) {
+            return static_cast<mcap::Timestamp>(
+                static_cast<uint64_t>(ts.tv_sec) * 1000000000ULL + static_cast<uint64_t>(ts.tv_nsec));
         }
     };
 
@@ -107,7 +109,7 @@ public:
 
     virtual ~BlackBox() noexcept
     {
-        if(_writer != NULL)
+        if(_writer != nullptr)
         {
             _writer->close();
             _writer->terminate();
@@ -141,7 +143,7 @@ private:
     std::unordered_map<std::string, mcap::ChannelId> _channel_map;
 
     std::ofstream _out_file;
-    std::shared_ptr<mcap::McapWriter> _writer = NULL;
+    std::shared_ptr<mcap::McapWriter> _writer = nullptr;
     
     static std::mutex _sig_mutex;
     static std::vector<std::shared_ptr<mcap::McapWriter>> _sig_queue;
@@ -151,18 +153,18 @@ private:
 
     std::pair<bool, mcap::ChannelId> create(std::string topic_name, const google::protobuf::Descriptor* descriptor);
 
-    void write(mcap::Message msg)
+    void write(const mcap::Message& msg)
     {
-        if(_writer != NULL)
+        if(_writer != nullptr)
         {
-            auto res = _writer->write(msg);
-            if(!res.ok()){
-                // エラー処理
-                if(_err_count % 10)
+            const auto res = _writer->write(msg);
+            if(!res.ok())
+            {
+                if((_err_count % 10) == 0)
                 {                
                     std::cerr << "Error: " << res.message << std::endl;
                 }
-                _err_count++;
+                ++_err_count;
             }
         }
     }

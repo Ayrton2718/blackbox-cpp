@@ -136,7 +136,7 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
 
 std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const google::protobuf::Descriptor *descriptor)
 {
-    if (_writer != NULL)
+    if (_writer != nullptr)
     {
         std::string schema_name = descriptor->full_name();
 

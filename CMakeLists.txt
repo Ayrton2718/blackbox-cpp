@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Options
+option(BLACKBOX_SCHEMA_DEBUG "Enable schema debug output" OFF)
+
 # Find dependencies
 find_package(mcap REQUIRED)
 find_package(protobuf REQUIRED)
@@ -29,6 +32,10 @@ target_include_directories(blackbox
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(blackbox PUBLIC mcap::mcap proto_generated)
+
+if(BLACKBOX_SCHEMA_DEBUG)
+    target_compile_definitions(blackbox PRIVATE BLACKBOX_SCHEMA_DEBUG)
+endif()
 
 # Create example executable
 add_executable(example.out ${CMAKE_CURRENT_SOURCE_DIR}/example/example.cpp)
