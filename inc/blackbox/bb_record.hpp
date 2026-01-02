@@ -19,11 +19,10 @@ public:
     }
 
     /// @brief 初期化
-    /// @param bb blackbox::BlackBoxのポインタ
+    /// @param bb blackbox::BlackBoxのshared_ptr
     /// @param record_name レコード名（"/record/namespace/record_name"になる）
-    /// @param qos QoS
     /// @param drop_count ドロップ数（0はドロップなし）
-    void init(BlackBox* bb, std::string record_name, size_t drop_count=0){
+    void init(std::shared_ptr<BlackBox> bb, std::string record_name, size_t drop_count=0){
         std::string ns = bb->get_namespace();
         if(ns.size() != 1){
             ns += '/';

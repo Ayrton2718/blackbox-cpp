@@ -69,6 +69,13 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
 }
 
 
+std::shared_ptr<BlackBox> BlackBox::create(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name, storage_profile_t storage_preset_profile, uint64_t max_cache_size)
+{
+    // コンストラクタがprivateなため、make_sharedは使用できない
+    // 代わりにshared_ptrのコンストラクタを使用
+    return std::shared_ptr<BlackBox>(new BlackBox(ns, name, debug_mode, file_name, storage_preset_profile, max_cache_size));
+}
+
 BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name, storage_profile_t storage_preset_profile, uint64_t max_cache_size) : _bb_debug_mode(debug_mode)
 {
     if (!ns.empty() && ns[0] != '/') {

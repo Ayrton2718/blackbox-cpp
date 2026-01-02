@@ -26,8 +26,25 @@ enum class debug_mode_t{
 };
 
 
-class BlackBox
+class BlackBox : public std::enable_shared_from_this<BlackBox>
 {
+public:
+    // コピー・ムーブを禁止
+    BlackBox(const BlackBox&) = delete;
+    BlackBox& operator=(const BlackBox&) = delete;
+    BlackBox(BlackBox&&) = delete;
+    BlackBox& operator=(BlackBox&&) = delete;
+
+    /// @brief BlackBoxインスタンスを作成するファクトリメソッド
+    /// @param ns 名前空間を指定する．
+    /// @param name ノード名を指定する．
+    /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
+    /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
+    /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
+    /// @param max_cache_size キャッシュサイズを指定する．レコードするサイズによって最適な変更する．（デフォルトは1024*128）
+    /// @return std::shared_ptr<BlackBox> インスタンス
+    static std::shared_ptr<BlackBox> create(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name="blackbox", storage_profile_t storage_preset_profile=storage_profile_t::zstd_fast, uint64_t max_cache_size=1024*128);
+
 public:
     // メッセージの書き込みを行うクラス（blackbox::Loggerやblackbox::Recordなどで使用）
     template<typename MessageT>
@@ -36,7 +53,7 @@ public:
     public:
         BlackBoxWriter(){}
 
-        void BlackBoxWriter_cons(BlackBox* handle, std::string topic_name, size_t drop_count=0)
+        void BlackBoxWriter_cons(std::shared_ptr<BlackBox> handle, std::string topic_name, size_t drop_count=0)
         {
             auto res = handle->create(topic_name, MessageT::descriptor());
             if(res.first)
@@ -52,7 +69,7 @@ public:
 
         void write(MessageT* msg, bb_time_t tim)
         {
-            if(msg != NULL && _handle != NULL){
+            if(msg != NULL && _handle != nullptr){
                 if((_counter % _drop_count) == 0)
                 {
                     // メッセージのシリアライズ
@@ -74,7 +91,7 @@ public:
         }
 
     private:
-        BlackBox*       _handle = nullptr;
+        std::shared_ptr<BlackBox> _handle = nullptr;
         std::string     _topic_name;
 
         mcap::ChannelId _channel_id = 0;
@@ -89,15 +106,6 @@ public:
 
 public:
     const debug_mode_t    _bb_debug_mode;
-
-    /// @brief 
-    /// @param ns 名前空間を指定する．
-    /// @param name ノード名を指定する．
-    /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
-    /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
-    /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
-    /// @param max_cache_size キャッシュサイズを指定する．レコードするサイズによって最適な変更する．（デフォルトは1024*128）
-    BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name="blackbox", storage_profile_t storage_preset_profile=storage_profile_t::zstd_fast, uint64_t max_cache_size=1024*128);
 
     virtual ~BlackBox() noexcept
     {
@@ -119,6 +127,15 @@ public:
     }
 
 private:
+    /// @brief コンストラクタ（privateのためcreate()を使用してください）
+    /// @param ns 名前空間を指定する．
+    /// @param name ノード名を指定する．
+    /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
+    /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
+    /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
+    /// @param max_cache_size キャッシュサイズを指定する．レコードするサイズによって最適な変更する．（デフォルトは1024*128）
+    BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name="blackbox", storage_profile_t storage_preset_profile=storage_profile_t::zstd_fast, uint64_t max_cache_size=1024*128);
+
     std::string _ns;
     std::string _name;
 

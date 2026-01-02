@@ -21,7 +21,7 @@ enum log_type_t{
 class Logger : BlackBoxWriter<foxglove::Log>
 {
 private:
-    BlackBox*       _bb = nullptr;
+    std::shared_ptr<BlackBox> _bb = nullptr;
     log_type_t      _log_type;
     std::string     _tag_name;
     bool            _is_enable = true;
@@ -32,10 +32,10 @@ public:
     Logger(void){}
 
     /// @brief ログの初期化
-    /// @param handle blackbox::BlackBoxNodeのポインタ（blackbox::LogRecorderのポインタ）
+    /// @param handle blackbox::BlackBoxのshared_ptr
     /// @param log_type ログの重要度
     /// @param tag_name ログのタグ名
-    void init(BlackBox* handle, log_type_t log_type, std::string tag_name){
+    void init(std::shared_ptr<BlackBox> handle, log_type_t log_type, std::string tag_name){
         _bb = handle;
         _log_type = log_type;
         _tag_name = tag_name;
@@ -80,7 +80,7 @@ public:
     static void log(Logger* obj, const char* file, const char* func, size_t line, const char* fmt, ...);
 
     static bool is_enable(Logger* obj){
-        return (obj != NULL && obj->_is_enable && obj->_bb != NULL);
+        return (obj != nullptr && obj->_is_enable && obj->_bb != nullptr);
     }
 
     static bool is_enable(Logger& obj){
