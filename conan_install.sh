@@ -2,33 +2,32 @@
 
 DIR_NAME="$(dirname $0)"
 
-# デフォルト値
+# Default values
 BUILD_TYPE="Release"
-BUILD_DIR="."
-USE_NINJA=false
+USE_NINJA=true
 
-# コマンドライン引数の解析
-while getopts "Db:n" opt; do
+# Parse command-line arguments
+while getopts "Dn" opt; do
     case "$opt" in
         D)
             BUILD_TYPE="Debug"
-            ;;
-        b)
-            BUILD_DIR="$OPTARG"
             ;;
         n)
             USE_NINJA=true
             ;;
         \?)
-            echo "Usage: $0 [-D] [-b build_directory] [-n]"
+            echo "Usage: $0 [-D] [-n]"
             exit 1
             ;;
         *)
-            echo "Usage: $0 [-D] [-b build_directory] [-n]"
+            echo "Usage: $0 [-D] [-n]"
             exit 1
             ;;
     esac
 done
+
+# Conan outputs to build/<BuildType>
+OUTPUT_DIR="build/$BUILD_TYPE"
 
 conan profile detect --name=blackbox_cpp --force
 
@@ -37,7 +36,7 @@ if $USE_NINJA; then
 fi
 
 echo "Build type: $BUILD_TYPE"
-echo "Build directory: $BUILD_DIR"
+echo "Output directory: $OUTPUT_DIR"
 echo "Using Ninja: $USE_NINJA"
 
-conan install $DIR_NAME --profile blackbox_cpp --build=missing -sbuild_type="$BUILD_TYPE" -of="$BUILD_DIR"
+conan install "$DIR_NAME" --profile blackbox_cpp --build=missing -s build_type="$BUILD_TYPE" -of="$OUTPUT_DIR"
