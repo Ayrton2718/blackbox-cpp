@@ -8,7 +8,7 @@ namespace blackbox
 {
 
 std::mutex BlackBox::_sig_mutex;
-std::vector<std::shared_ptr<mcap::McapWriter>> BlackBox::_sig_queue;
+std::vector<std::shared_ptr<std::pair<std::ofstream, mcap::McapWriter>>> BlackBox::_sig_queue;
 
 
 static void ProcessDependencies(const google::protobuf::FileDescriptor* file_descriptor,
@@ -94,9 +94,12 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     _name = name;
 
     blackbox_path = blackbox_path + ".mcap";
-    _out_file.open(blackbox_path, std::ios::binary);
-    if (!_out_file.is_open())
+    _writer = std::make_shared<std::pair<std::ofstream, mcap::McapWriter>>();
+    _writer->first.open(blackbox_path, std::ios::binary);
+    if (!_writer->first.is_open())
     {
+        std::cerr << "Failed to open blackbox bag file: " << blackbox_path << std::endl;
+        _writer.reset();
         return;
     }
 
@@ -123,8 +126,7 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
         break;
     }
 
-    _writer = std::make_shared<mcap::McapWriter>();
-    _writer->open(_out_file, options);
+    _writer->second.open(_writer->first, options);
 
     std::cout << "Create BlackBox bag file: " << blackbox_path << std::endl;
 
@@ -153,7 +155,7 @@ std::pair<bool, mcap::ChannelId> BlackBox::register_channel(std::string topic_na
                 "protobuf",              // エンコーディング
                 descriptorData           // バイナリデータをそのまま渡す
             );
-            _writer->addSchema(myStringSchema);
+            _writer->second.addSchema(myStringSchema);
 
             _schema_map[schema_name] = myStringSchema.id;
             schema_id = myStringSchema.id;
@@ -167,7 +169,7 @@ std::pair<bool, mcap::ChannelId> BlackBox::register_channel(std::string topic_na
         if(_channel_map.find(topic_name) == _channel_map.end())
         {
             mcap::Channel topic(topic_name, "protobuf", schema_id);
-            _writer->addChannel(topic);
+            _writer->second.addChannel(topic);
 
             _channel_map[topic_name] = topic.id;
             channel_id = topic.id;
@@ -192,8 +194,9 @@ void BlackBox::handler(int sig)
         if (sig_instance != nullptr)
         {
             std::cerr << "Closing blackbox bag file..." << std::endl;
-            sig_instance->close();
-            sig_instance->terminate();
+            sig_instance->second.close();
+            sig_instance->first.close();
+
             sig_instance.reset();
         }
     }

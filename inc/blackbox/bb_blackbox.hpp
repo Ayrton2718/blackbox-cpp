@@ -144,11 +144,10 @@ private:
     std::unordered_map<std::string, mcap::SchemaId> _schema_map;
     std::unordered_map<std::string, mcap::ChannelId> _channel_map;
 
-    std::ofstream _out_file;
-    std::shared_ptr<mcap::McapWriter> _writer = nullptr;
-    
+    std::shared_ptr<std::pair<std::ofstream, mcap::McapWriter>> _writer = nullptr;
+
     static std::mutex _sig_mutex;
-    static std::vector<std::shared_ptr<mcap::McapWriter>> _sig_queue;
+    static std::vector<std::shared_ptr<std::pair<std::ofstream, mcap::McapWriter>>> _sig_queue;
 
     size_t _err_count = 0;
 
@@ -159,7 +158,7 @@ private:
     {
         if(_writer != nullptr)
         {
-            const auto res = _writer->write(msg);
+            const auto res = _writer->second.write(msg);
             if(!res.ok())
             {
                 if((_err_count % 10) == 0)

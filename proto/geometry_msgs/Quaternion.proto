@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package geometry_msgs;
+
+// Quaternion represents a ROS2 geometry_msgs/Quaternion message
+// Default values: x=0, y=0, z=0, w=1 (identity quaternion)
+message Quaternion {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double w = 4;
+}
+

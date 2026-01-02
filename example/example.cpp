@@ -18,6 +18,7 @@
 #include "foxglove/LaserScan.pb.h"
 
 #include "simpleproto/MultiArray.pb.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.pb.h"
 
 #define BOX_SIZE (5.0)
 
@@ -127,6 +128,53 @@ std::shared_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double 
     return scene_update_msg;
 }
 
+std::shared_ptr<geometry_msgs::PoseWithCovarianceStamped> create_localization_msg(double x, double y, double yaw)
+{
+    auto msg = std::make_shared<geometry_msgs::PoseWithCovarianceStamped>();
+
+    // Set header
+    auto header = msg->mutable_header();
+    auto stamp = header->mutable_stamp();
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    stamp->set_sec(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+    stamp->set_nanosec(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() % 1000000000);
+    header->set_frame_id("map");
+
+    // Set pose
+    auto pose_with_cov = msg->mutable_pose();
+    auto pose = pose_with_cov->mutable_pose();
+    
+    // Set position
+    auto position = pose->mutable_position();
+    position->set_x(x);
+    position->set_y(y);
+    position->set_z(0.0);
+
+    // Set orientation (quaternion from yaw angle)
+    auto orientation = pose->mutable_orientation();
+    orientation->set_x(0.0);
+    orientation->set_y(0.0);
+    orientation->set_z(std::sin(yaw / 2.0));
+    orientation->set_w(std::cos(yaw / 2.0));
+
+    // Set covariance matrix (6x6 = 36 elements)
+    // Diagonal elements represent variance for x, y, z, roll, pitch, yaw
+    // Using small values to indicate high confidence in localization
+    for (int i = 0; i < 36; i++) {
+        pose_with_cov->add_covariance(0.0);
+    }
+    // Set diagonal elements (variance)
+    pose_with_cov->set_covariance(0, 0.01);   // x variance
+    pose_with_cov->set_covariance(7, 0.01);   // y variance
+    pose_with_cov->set_covariance(14, 0.01);  // z variance
+    pose_with_cov->set_covariance(21, 0.001); // roll variance
+    pose_with_cov->set_covariance(28, 0.001); // pitch variance
+    pose_with_cov->set_covariance(35, 0.01);  // yaw variance
+
+    return msg;
+}
+
 std::shared_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
 {
     std::shared_ptr<foxglove::LaserScan> laser_scan_msg = std::make_shared<foxglove::LaserScan>();
@@ -174,6 +222,7 @@ int main()
     auto laser_record = blackbox::Record<foxglove::LaserScan>::create(bb, "laser_scan");
     auto array_record = blackbox::Record<simpleproto::MultiArrayDouble>::create(bb, "multi_array");
     auto diag_record = blackbox::Record<simpleproto::MultiArrayBool>::create(bb, "diag");
+    auto localization_record = blackbox::Record<geometry_msgs::PoseWithCovarianceStamped>::create(bb, "localization");
 
     auto start_time = std::chrono::steady_clock::now();
     auto end_time = start_time + std::chrono::seconds(10);  // Run for 10 seconds
@@ -186,16 +235,22 @@ int main()
         double y = 5.2 * std::sin(std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count());
         double z = 0.0;
 
+        // Calculate yaw from velocity direction (tangent to circular motion)
+        double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count();
+        double yaw = elapsed + M_PI / 2.0;  // Tangent direction for circular motion
+
         auto frame_msg = create_frame_transform_msg(x, y, z);
         auto scene_msg = create_scene_update_msg(x, y, z);
         auto array_msg = create_multi_array_msg(x, y, z);
         auto laser_msg = create_laser_scan_msg();
+        auto localization_msg = create_localization_msg(x, y, yaw);
 
         // Record messages
         frame_record->record(frame_msg);
         scene_record->record(scene_msg);
         array_record->record(array_msg);
         laser_record->record(laser_msg);
+        localization_record->record(localization_msg);
 
         auto diag_msg = std::make_shared<simpleproto::MultiArrayBool>();
         // Is x in box

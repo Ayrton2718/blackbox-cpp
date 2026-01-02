@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package geometry_msgs;
+
+import "std_msgs/Header.proto";
+import "geometry_msgs/PoseWithCovariance.proto";
+
+// PoseWithCovarianceStamped represents a ROS2 geometry_msgs/msg/PoseWithCovarianceStamped message
+// This expresses an estimated pose with a reference coordinate frame and timestamp
+message PoseWithCovarianceStamped {
+  std_msgs.Header header = 1;
+  PoseWithCovariance pose = 2;
+}
+
