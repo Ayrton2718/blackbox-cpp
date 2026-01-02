@@ -20,7 +20,30 @@ enum log_type_t{
 
 class Logger : BlackBoxWriter<foxglove::Log>
 {
+public:
+    // コピー・ムーブを禁止
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+    Logger(Logger&&) = delete;
+    Logger& operator=(Logger&&) = delete;
+
+    /// @brief Loggerインスタンスを作成するファクトリメソッド
+    /// @param handle blackbox::BlackBoxのshared_ptr
+    /// @param log_type ログの重要度
+    /// @param tag_name ログのタグ名
+    /// @return std::unique_ptr<Logger> インスタンス
+    static std::shared_ptr<Logger> create(std::shared_ptr<BlackBox> handle, log_type_t log_type, std::string tag_name){
+        std::shared_ptr<Logger> logger(new Logger());
+        logger->init(handle, log_type, tag_name);
+        return logger;
+    }
+
+    static void log(std::shared_ptr<Logger> obj, const char* file, const char* func, size_t line, std::string str);
+    static void log(std::shared_ptr<Logger> obj, const char* file, const char* func, size_t line, const char* fmt, ...);
+
 private:
+    Logger(void){}
+
     std::shared_ptr<BlackBox> _bb = nullptr;
     log_type_t      _log_type;
     std::string     _tag_name;
@@ -28,10 +51,7 @@ private:
 
     foxglove::Log_Level _foxglove_level;
 
-public:
-    Logger(void){}
-
-    /// @brief ログの初期化
+    /// @brief ログの初期化（内部用）
     /// @param handle blackbox::BlackBoxのshared_ptr
     /// @param log_type ログの重要度
     /// @param tag_name ログのタグ名
@@ -74,22 +94,10 @@ public:
         }
         this->BlackBoxWriter_cons(_bb, "/tagger" + ns + _bb->get_name(), 0);
     }
-
-
-    static void log(Logger* obj, const char* file, const char* func, size_t line, std::string str);
-    static void log(Logger* obj, const char* file, const char* func, size_t line, const char* fmt, ...);
-
-    static bool is_enable(Logger* obj){
-        return (obj != nullptr && obj->_is_enable && obj->_bb != nullptr);
-    }
-
-    static bool is_enable(Logger& obj){
-        return is_enable(&obj);
-    }
 };
 
 }
 
 // obj: blackbox::Loggerのインスタンス
 // ...: ログメッセージ（fmt or std::string）
-#define TAGGER(obj, ...) if(blackbox::Logger::is_enable(obj)){blackbox::Logger::log(obj, basename(__FILE__), __func__, __LINE__, __VA_ARGS__);}
+#define TAGGER(obj, ...) blackbox::Logger::log(obj, basename(__FILE__), __func__, __LINE__, __VA_ARGS__);

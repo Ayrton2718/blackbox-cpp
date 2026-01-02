@@ -5,8 +5,13 @@
 namespace blackbox
 {
 
-void Logger::log(Logger* obj, const char* file, const char* func, size_t line, std::string str)
+void Logger::log(std::shared_ptr<Logger> obj, const char* file, const char* func, size_t line, std::string str)
 {
+    if(obj == nullptr || obj->_bb == nullptr || obj->_is_enable == false)
+    {
+        return;
+    }
+
     auto now = get_bb_tim();
 
     std::unique_ptr<foxglove::Log> msg = std::make_unique<foxglove::Log>();
@@ -47,26 +52,28 @@ void Logger::log(Logger* obj, const char* file, const char* func, size_t line, s
 }
 
 
-void Logger::log(Logger* obj, const char* file, const char* func, size_t line, const char* fmt, ...)
+void Logger::log(std::shared_ptr<Logger> obj, const char* file, const char* func, size_t line, const char* fmt, ...)
 {
+    const int MAX_LOG_SIZE = 1024;
+    
     std::string str;
     va_list ap;
     va_list ap_copy;
     va_copy(ap_copy, ap);
 
     va_start(ap, fmt);
-    str.resize(1024);
-    int len = vsnprintf(&str[0], 1024, fmt, ap);
+    str.resize(MAX_LOG_SIZE);
+    int len = vsnprintf(str.data(), str.size(), fmt, ap);
     va_end(ap);
 
-    if(len < 1024)
+    if(len < MAX_LOG_SIZE)
     {
-        str.resize(len + 1);
+        str.resize(len + 1);  // need space for NUL
     }else{
         str.resize(len + 1);  // need space for NUL
 
         va_start(ap_copy, fmt);
-        vsnprintf(&str[0], len + 1, fmt, ap_copy);
+        vsnprintf(str.data(), str.size(), fmt, ap_copy);
         va_end(ap_copy);
     }
 

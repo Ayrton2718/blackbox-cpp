@@ -167,27 +167,16 @@ int main()
     // create blackbox node (shared_ptrでのみインスタンス化可能)
     auto bb = blackbox::BlackBox::create("ns", "name", blackbox::debug_mode_t::DEBUG);
 
-    // create logger
-    blackbox::Logger info;
-    info.init(bb, blackbox::log_type_t::INFO, "position");
+    // create logger (unique_ptrでのみインスタンス化可能)
+    auto info = blackbox::Logger::create(bb, blackbox::log_type_t::INFO, "position");
+    auto error = blackbox::Logger::create(bb, blackbox::log_type_t::ERR, "over_position");
 
-    blackbox::Logger error;
-    error.init(bb, blackbox::log_type_t::ERR, "over_position");
-
-    blackbox::Record<foxglove::FrameTransform> frame_record;
-    frame_record.init(bb, "tf");
-
-    blackbox::Record<foxglove::SceneUpdate> scene_record;
-    scene_record.init(bb, "scene");
-
-    blackbox::Record<foxglove::LaserScan> laser_record;
-    laser_record.init(bb, "laser_scan");
-
-    blackbox::Record<simpleproto::MultiArrayDouble> array_record;
-    array_record.init(bb, "multi_array");
-
-    blackbox::Record<simpleproto::MultiArrayBool> diag_record;
-    diag_record.init(bb, "diag");
+    // create records (unique_ptrでのみインスタンス化可能)
+    auto frame_record = blackbox::Record<foxglove::FrameTransform>::create(bb, "tf");
+    auto scene_record = blackbox::Record<foxglove::SceneUpdate>::create(bb, "scene");
+    auto laser_record = blackbox::Record<foxglove::LaserScan>::create(bb, "laser_scan");
+    auto array_record = blackbox::Record<simpleproto::MultiArrayDouble>::create(bb, "multi_array");
+    auto diag_record = blackbox::Record<simpleproto::MultiArrayBool>::create(bb, "diag");
 
     auto start_time = std::chrono::steady_clock::now();
     auto end_time = start_time + std::chrono::seconds(10);  // Run for 10 seconds
@@ -206,10 +195,10 @@ int main()
         auto laser_msg = create_laser_scan_msg();
 
         // Record messages
-        frame_record.record(frame_msg.get());
-        scene_record.record(scene_msg.get());
-        array_record.record(array_msg.get());
-        laser_record.record(laser_msg.get());
+        frame_record->record(frame_msg.get());
+        scene_record->record(scene_msg.get());
+        array_record->record(array_msg.get());
+        laser_record->record(laser_msg.get());
 
         auto diag_msg = std::make_shared<simpleproto::MultiArrayBool>();
         // Is x in box
@@ -219,13 +208,13 @@ int main()
 
         if(!diag_msg->values(0) || !diag_msg->values(1))
         {
-            TAGGER(&error, "Out of box: Position (%.2f, %.2f, %.2f)", x, y, z);
+            TAGGER(error, "Out of box: Position (%.2f, %.2f, %.2f)", x, y, z);
         }
         else
         {
-            TAGGER(&info, "In box: Position (%.2f, %.2f, %.2f)", x, y, z);
+            TAGGER(info, "In box: Position (%.2f, %.2f, %.2f)", x, y, z);
         }
-        diag_record.record(diag_msg);
+        diag_record->record(diag_msg);
 
         // Wait 1 second before next iteration
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

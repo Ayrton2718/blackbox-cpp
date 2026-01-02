@@ -72,17 +72,15 @@ public:
             if(msg != NULL && _handle != nullptr){
                 if((_counter % _drop_count) == 0)
                 {
-                    // メッセージのシリアライズ
-                    std::vector<std::byte> payload(msg->ByteSizeLong()); // uint8_t を使用
-                    msg->SerializeToArray(static_cast<void*>(payload.data()), payload.size());
+                    std::string data = msg->SerializeAsString();
                     
                     mcap::Message mcap_msg;
                     mcap_msg.channelId = _channel_id;
                     mcap_msg.sequence = 0;
                     mcap_msg.publishTime = this->timespec_to_timestamp(tim);
                     mcap_msg.logTime = this->timespec_to_timestamp(get_bb_tim());
-                    mcap_msg.data = payload.data(); // 修正: キャスト
-                    mcap_msg.dataSize = payload.size();
+                    mcap_msg.data = reinterpret_cast<const std::byte*>(data.data());
+                    mcap_msg.dataSize = data.size();
 
                     _handle->write(mcap_msg);
                 }
