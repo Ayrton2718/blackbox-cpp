@@ -23,22 +23,31 @@ while getopts "BDV" opt; do
     esac
 done
 
-# Remove build and install directories if -B option is given
-if [ "$FORCE_REBUILD" = true ]; then
-    if [ -d "$BUILD_DIR" ]; then
-        echo "Cleaning previous build..."
-        rm -rf "$BUILD_DIR"
+BUILD_TYPE_DIR="$BUILD_DIR/$BUILD_TYPE"
+# Conan 2.x places generators in a nested structure
+TOOLCHAIN_FILE="$BUILD_TYPE_DIR/build/$BUILD_TYPE/generators/conan_toolchain.cmake"
 
-        if [ "$BUILD_TYPE" = "Debug" ]; then
-            ./conan_install.sh -D
-        else
-            ./conan_install.sh
-        fi
+# Remove build directory if -B option is given
+if [ "$FORCE_REBUILD" = true ] && [ -d "$BUILD_TYPE_DIR" ]; then
+    echo "Cleaning previous build..."
+    rm -rf "$BUILD_TYPE_DIR"
+fi
+
+# Run conan install if toolchain file doesn't exist
+if [ ! -f "$TOOLCHAIN_FILE" ]; then
+    echo "Conan toolchain not found, running conan install..."
+    if [ "$BUILD_TYPE" = "Debug" ]; then
+        ./conan_install.sh -D
+    else
+        ./conan_install.sh
     fi
 fi
 
 # Run CMake with the selected build type and optional debug macro
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=generators/conan_toolchain.cmake -S . -B build/$BUILD_TYPE
+cmake -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+      -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" \
+      $DEBUG_MACRO \
+      -S . -B "$BUILD_TYPE_DIR"
 
 # Build project
-cmake --build ./build/$BUILD_TYPE --parallel 12
+cmake --build "$BUILD_TYPE_DIR" --parallel 12
