@@ -17,7 +17,6 @@ add_subdirectory(proto)
 set(BLACKBOX_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bb_blackbox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bb_file.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/bb_logger.cpp
 )
 
 # Create blackbox library
