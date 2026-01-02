@@ -35,14 +35,14 @@ public:
     /// @brief メッセージの送信
     /// @param msg メッセージ
     /// @param tim レコード用のタイムスタンプ
-    void record(MessageT* msg, bb_time_t tim = blackbox::get_bb_tim())
-    {
+    void record(std::unique_ptr<MessageT> msg, bb_time_t tim = blackbox::get_bb_tim()){
         if(IS_ENABLE_RECORD)
-            BlackBoxWriter<MessageT>::write(msg, tim);
+            BlackBoxWriter<MessageT>::write(*msg, tim);
     }
 
     void record(std::shared_ptr<MessageT> msg, bb_time_t tim = blackbox::get_bb_tim()){
-        this->record(msg.get(), tim);
+        if(IS_ENABLE_RECORD)
+            BlackBoxWriter<MessageT>::write(*msg, tim);
     }
 
 private:

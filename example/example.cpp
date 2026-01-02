@@ -75,19 +75,19 @@ void set_wall(foxglove::LinePrimitive* line)
     color->set_a(255);  // Alpha (fully opaque)
 }
 
-std::unique_ptr<simpleproto::MultiArrayDouble> create_multi_array_msg(double x, double y, double z)
+std::shared_ptr<simpleproto::MultiArrayDouble> create_multi_array_msg(double x, double y, double z)
 {
-    std::unique_ptr<simpleproto::MultiArrayDouble> array_msg = std::make_unique<simpleproto::MultiArrayDouble>();
+    std::shared_ptr<simpleproto::MultiArrayDouble> array_msg = std::make_shared<simpleproto::MultiArrayDouble>();
     // Set example double array
     array_msg->add_values(x);
     array_msg->add_values(y);
     array_msg->add_values(z);
-    return std::move(array_msg);
+    return array_msg;
 }
 
-std::unique_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, double y, double z)
+std::shared_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, double y, double z)
 {
-    std::unique_ptr<foxglove::FrameTransform> transform_msg = std::make_unique<foxglove::FrameTransform>();
+    std::shared_ptr<foxglove::FrameTransform> transform_msg = std::make_shared<foxglove::FrameTransform>();
 
     blackbox::set_proto_timestamp(transform_msg->mutable_timestamp());
 
@@ -107,12 +107,12 @@ std::unique_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, d
     rotation->set_z(0.0);
     rotation->set_w(1.0);
 
-    return std::move(transform_msg);
+    return transform_msg;
 }
 
-std::unique_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double y, double z)
+std::shared_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double y, double z)
 {
-    std::unique_ptr<foxglove::SceneUpdate> scene_update_msg = std::make_unique<foxglove::SceneUpdate>();
+    std::shared_ptr<foxglove::SceneUpdate> scene_update_msg = std::make_shared<foxglove::SceneUpdate>();
     
     auto element = scene_update_msg->add_entities();
     blackbox::set_proto_timestamp(element->mutable_timestamp());
@@ -124,12 +124,12 @@ std::unique_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double 
     auto lines = element->mutable_lines();
     set_wall(lines->Add());
 
-    return std::move(scene_update_msg);
+    return scene_update_msg;
 }
 
-std::unique_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
+std::shared_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
 {
-    std::unique_ptr<foxglove::LaserScan> laser_scan_msg = std::make_unique<foxglove::LaserScan>();
+    std::shared_ptr<foxglove::LaserScan> laser_scan_msg = std::make_shared<foxglove::LaserScan>();
 
     blackbox::set_proto_timestamp(laser_scan_msg->mutable_timestamp());
 
@@ -157,21 +157,18 @@ std::unique_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
         laser_scan_msg->add_ranges(4.0);
         laser_scan_msg->add_intensities(100);
     }
-    return std::move(laser_scan_msg);
+    return laser_scan_msg;
 }
 
 
 // sample main function of logger using blackbox
 int main()
 {
-    // create blackbox node (shared_ptrでのみインスタンス化可能)
     auto bb = blackbox::BlackBox::create("ns", "name", blackbox::debug_mode_t::DEBUG);
 
-    // create logger (unique_ptrでのみインスタンス化可能)
     auto info = blackbox::Logger::create(bb, blackbox::log_type_t::INFO, "position");
     auto error = blackbox::Logger::create(bb, blackbox::log_type_t::ERR, "over_position");
 
-    // create records (unique_ptrでのみインスタンス化可能)
     auto frame_record = blackbox::Record<foxglove::FrameTransform>::create(bb, "tf");
     auto scene_record = blackbox::Record<foxglove::SceneUpdate>::create(bb, "scene");
     auto laser_record = blackbox::Record<foxglove::LaserScan>::create(bb, "laser_scan");
@@ -195,10 +192,10 @@ int main()
         auto laser_msg = create_laser_scan_msg();
 
         // Record messages
-        frame_record->record(frame_msg.get());
-        scene_record->record(scene_msg.get());
-        array_record->record(array_msg.get());
-        laser_record->record(laser_msg.get());
+        frame_record->record(frame_msg);
+        scene_record->record(scene_msg);
+        array_record->record(array_msg);
+        laser_record->record(laser_msg);
 
         auto diag_msg = std::make_shared<simpleproto::MultiArrayBool>();
         // Is x in box

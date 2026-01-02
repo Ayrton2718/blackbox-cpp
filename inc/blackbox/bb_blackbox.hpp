@@ -66,13 +66,16 @@ public:
             }
         }
 
-
-        void write(MessageT* msg, bb_time_t tim)
+        void write(const MessageT& msg, bb_time_t tim)
         {
-            if(msg != nullptr && _handle != nullptr){
+            if(_handle != nullptr){
                 if((_counter % _drop_count) == 0)
                 {
-                    msg->SerializeToString(&_serialize_buffer);
+                    if(!msg.SerializeToString(&_serialize_buffer))
+                    {
+                        std::cerr << "Error: Failed to serialize message" << std::endl;
+                        return;
+                    }
                     
                     mcap::Message mcap_msg;
                     mcap_msg.channelId = _channel_id;
@@ -84,8 +87,8 @@ public:
 
                     _handle->write(mcap_msg);
                 }
+                _counter++;
             }
-            _counter++;
         }
 
     private:
