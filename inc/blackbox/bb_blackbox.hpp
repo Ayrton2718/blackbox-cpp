@@ -5,6 +5,7 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <algorithm>
 
 #include <mcap/mcap.hpp>
 #include "bb_time.hpp"
@@ -55,7 +56,7 @@ public:
 
         void BlackBoxWriter_cons(std::shared_ptr<BlackBox> handle, std::string topic_name, size_t drop_count=0)
         {
-            auto res = handle->create(topic_name, MessageT::descriptor());
+            auto res = handle->register_channel(topic_name, MessageT::descriptor());
             if(res.first)
             {
                 _handle = handle;
@@ -110,14 +111,12 @@ public:
 public:
     const debug_mode_t    _bb_debug_mode;
 
-    virtual ~BlackBox() noexcept
-    {
-        if(_writer != nullptr)
-        {
-            _writer->close();
-            _writer->terminate();
-        }
+    virtual ~BlackBox() noexcept{
     }
+
+    /// @brief Check if the BlackBox was initialized successfully
+    /// @return true if valid, false otherwise
+    bool is_valid() const { return _writer != nullptr; }
 
     std::string get_namespace(void)
     {
@@ -154,7 +153,7 @@ private:
     size_t _err_count = 0;
 
 
-    std::pair<bool, mcap::ChannelId> create(std::string topic_name, const google::protobuf::Descriptor* descriptor);
+    std::pair<bool, mcap::ChannelId> register_channel(std::string topic_name, const google::protobuf::Descriptor* descriptor);
 
     void write(const mcap::Message& msg)
     {

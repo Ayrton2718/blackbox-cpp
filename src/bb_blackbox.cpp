@@ -126,15 +126,17 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     _writer = std::make_shared<mcap::McapWriter>();
     _writer->open(_out_file, options);
 
-    std::cout << "Crate BlackBox bag file: " << blackbox_path << std::endl;
+    std::cout << "Create BlackBox bag file: " << blackbox_path << std::endl;
 
-    std::lock_guard<std::mutex> lock(_sig_mutex);
-    _sig_queue.push_back(_writer);
-    signal(SIGINT, BlackBox::handler);
+    {
+        std::lock_guard<std::mutex> lock(_sig_mutex);
+        _sig_queue.push_back(_writer);
+        signal(SIGINT, BlackBox::handler);
+    }
 }
 
 
-std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const google::protobuf::Descriptor *descriptor)
+std::pair<bool, mcap::ChannelId> BlackBox::register_channel(std::string topic_name, const google::protobuf::Descriptor *descriptor)
 {
     if (_writer != nullptr)
     {
@@ -184,6 +186,7 @@ void BlackBox::handler(int sig)
 {
     std::cerr << "SIGINT received, exiting..." << std::endl;
 
+    std::lock_guard<std::mutex> lock(_sig_mutex);
     for (auto &sig_instance : _sig_queue)
     {
         if (sig_instance != nullptr)
