@@ -34,19 +34,22 @@ public:
     Logger& operator=(Logger&&) = delete;
 
     /// @brief Loggerインスタンスを作成するファクトリメソッド
-    /// @param handle blackbox::BlackBoxのshared_ptr
+    /// @param bb blackbox::BlackBoxのshared_ptr
     /// @param log_type ログの重要度
     /// @param tag_name ログのタグ名
     /// @return std::unique_ptr<Logger> インスタンス
-    static std::shared_ptr<Logger> create(std::shared_ptr<BlackBox> handle, log_type_t log_type, std::string tag_name){
+    static std::shared_ptr<Logger> create(std::shared_ptr<BlackBox> bb, log_type_t log_type, std::string tag_name){
+        if(bb == nullptr)
+            return nullptr;
+
         std::shared_ptr<Logger> logger(new Logger());
-        logger->init(handle, log_type, tag_name);
+        logger->init(bb, log_type, tag_name);
         return logger;
     }
 
     static void log(std::shared_ptr<Logger> obj, const char* file, const char* func, size_t line, std::string str)
     {
-        if(obj == nullptr || obj->_bb == nullptr || obj->_is_enable == false)
+        if(obj == nullptr || obj->_is_enable == false)
         {
             return;
         }
@@ -130,11 +133,11 @@ private:
     foxglove::Log_Level _foxglove_level;
 
     /// @brief ログの初期化（内部用）
-    /// @param handle blackbox::BlackBoxのshared_ptr
+    /// @param bb blackbox::BlackBoxのshared_ptr
     /// @param log_type ログの重要度
     /// @param tag_name ログのタグ名
-    void init(std::shared_ptr<BlackBox> handle, log_type_t log_type, std::string tag_name){
-        _bb = handle;
+    void init(std::shared_ptr<BlackBox> bb, log_type_t log_type, std::string tag_name){
+        _bb = bb;
         _log_type = log_type;
         _tag_name = tag_name;
 

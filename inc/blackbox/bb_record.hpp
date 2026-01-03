@@ -27,6 +27,9 @@ public:
     /// @param drop_count ドロップ数（0はドロップなし）
     /// @return std::unique_ptr<Record> インスタンス
     static std::shared_ptr<Record> create(std::shared_ptr<BlackBox> bb, std::string record_name, size_t drop_count=0){
+        if(bb == nullptr)
+            return nullptr;
+
         std::shared_ptr<Record> record(new Record());
         record->init(bb, record_name, drop_count);
         return record;
@@ -36,11 +39,17 @@ public:
     /// @param msg メッセージ
     /// @param tim レコード用のタイムスタンプ
     void record(std::unique_ptr<MessageT> msg, bb_time_t tim = blackbox::get_bb_tim()){
+        if(msg == nullptr)
+            return;
+
         if(IS_ENABLE_RECORD)
             BlackBoxWriter<MessageT>::write(*msg, tim);
     }
 
     void record(std::shared_ptr<MessageT> msg, bb_time_t tim = blackbox::get_bb_tim()){
+        if(msg == nullptr)
+            return;
+
         if(IS_ENABLE_RECORD)
             BlackBoxWriter<MessageT>::write(*msg, tim);
     }
