@@ -1,11 +1,15 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <sys/time.h>
+#include <stdarg.h>
 #include "blackbox/bb_blackbox.hpp"
 #include "foxglove/Log.pb.h"
 
-#include <stdarg.h>
+#ifdef __APPLE__
+#include <libgen.h>
+#endif
 
 namespace blackbox
 {
@@ -172,6 +176,14 @@ private:
 
 }
 
-// obj: blackbox::Loggerのインスタンス
-// ...: ログメッセージ（fmt or std::string）
+#ifdef __APPLE__
+inline const char* get_basename(const char* path) {
+    static thread_local char buffer[1024];
+    strncpy(buffer, path, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
+    return basename(buffer);
+}
+#define TAGGER(obj, ...) blackbox::Logger::log(obj, get_basename(__FILE__), __func__, __LINE__, __VA_ARGS__);
+#else
 #define TAGGER(obj, ...) blackbox::Logger::log(obj, basename(__FILE__), __func__, __LINE__, __VA_ARGS__);
+#endif
