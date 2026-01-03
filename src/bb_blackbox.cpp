@@ -8,7 +8,7 @@ namespace blackbox
 {
 
 std::mutex BlackBox::_sig_mutex;
-std::vector<std::shared_ptr<mcap::McapWriter>> BlackBox::_sig_queue;
+std::vector<std::shared_ptr<std::pair<std::ofstream, mcap::McapWriter>>> BlackBox::_sig_queue;
 
 
 static void ProcessDependencies(const google::protobuf::FileDescriptor* file_descriptor,
@@ -69,6 +69,13 @@ static std::vector<std::byte> GenerateDescriptorBinary(const google::protobuf::D
 }
 
 
+std::shared_ptr<BlackBox> BlackBox::create(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name, storage_profile_t storage_preset_profile, uint64_t max_cache_size)
+{
+    // コンストラクタがprivateなため、make_sharedは使用できない
+    // 代わりにshared_ptrのコンストラクタを使用
+    return std::shared_ptr<BlackBox>(new BlackBox(ns, name, debug_mode, file_name, storage_preset_profile, max_cache_size));
+}
+
 BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name, storage_profile_t storage_preset_profile, uint64_t max_cache_size) : _bb_debug_mode(debug_mode)
 {
     if (!ns.empty() && ns[0] != '/') {
@@ -87,9 +94,12 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     _name = name;
 
     blackbox_path = blackbox_path + ".mcap";
-    _out_file.open(blackbox_path, std::ios::binary);
-    if (!_out_file.is_open())
+    _writer = std::make_shared<std::pair<std::ofstream, mcap::McapWriter>>();
+    _writer->first.open(blackbox_path, std::ios::binary);
+    if (!_writer->first.is_open())
     {
+        std::cerr << "Failed to open blackbox bag file: " << blackbox_path << std::endl;
+        _writer.reset();
         return;
     }
 
@@ -116,20 +126,21 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
         break;
     }
 
-    _writer = std::make_shared<mcap::McapWriter>();
-    _writer->open(_out_file, options);
+    _writer->second.open(_writer->first, options);
 
-    std::cout << "Crate BlackBox bag file: " << blackbox_path << std::endl;
+    std::cout << "Create BlackBox bag file: " << blackbox_path << std::endl;
 
-    std::lock_guard<std::mutex> lock(_sig_mutex);
-    _sig_queue.push_back(_writer);
-    signal(SIGINT, BlackBox::handler);
+    {
+        std::lock_guard<std::mutex> lock(_sig_mutex);
+        _sig_queue.push_back(_writer);
+        signal(SIGINT, BlackBox::handler);
+    }
 }
 
 
-std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const google::protobuf::Descriptor *descriptor)
+std::pair<bool, mcap::ChannelId> BlackBox::register_channel(std::string topic_name, const google::protobuf::Descriptor *descriptor)
 {
-    if (_writer != NULL)
+    if (_writer != nullptr)
     {
         std::string schema_name = descriptor->full_name();
 
@@ -144,7 +155,7 @@ std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const 
                 "protobuf",              // エンコーディング
                 descriptorData           // バイナリデータをそのまま渡す
             );
-            _writer->addSchema(myStringSchema);
+            _writer->second.addSchema(myStringSchema);
 
             _schema_map[schema_name] = myStringSchema.id;
             schema_id = myStringSchema.id;
@@ -158,7 +169,7 @@ std::pair<bool, mcap::ChannelId> BlackBox::create(std::string topic_name, const 
         if(_channel_map.find(topic_name) == _channel_map.end())
         {
             mcap::Channel topic(topic_name, "protobuf", schema_id);
-            _writer->addChannel(topic);
+            _writer->second.addChannel(topic);
 
             _channel_map[topic_name] = topic.id;
             channel_id = topic.id;
@@ -177,13 +188,15 @@ void BlackBox::handler(int sig)
 {
     std::cerr << "SIGINT received, exiting..." << std::endl;
 
+    std::lock_guard<std::mutex> lock(_sig_mutex);
     for (auto &sig_instance : _sig_queue)
     {
         if (sig_instance != nullptr)
         {
             std::cerr << "Closing blackbox bag file..." << std::endl;
-            sig_instance->close();
-            sig_instance->terminate();
+            sig_instance->second.close();
+            sig_instance->first.close();
+
             sig_instance.reset();
         }
     }

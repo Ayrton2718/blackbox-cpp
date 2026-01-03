@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package std_msgs;
+
+import "builtin_interfaces/Time.proto";
+
+// Header represents a ROS2 std_msgs/Header message
+message Header {
+  builtin_interfaces.Time stamp = 1;  // Timestamp
+  string frame_id = 2;                // Frame ID
+}
+

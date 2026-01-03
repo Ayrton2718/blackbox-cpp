@@ -5,6 +5,7 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <algorithm>
 
 #include <mcap/mcap.hpp>
 #include "bb_time.hpp"
@@ -26,8 +27,25 @@ enum class debug_mode_t{
 };
 
 
-class BlackBox
+class BlackBox : public std::enable_shared_from_this<BlackBox>
 {
+public:
+    // コピー・ムーブを禁止
+    BlackBox(const BlackBox&) = delete;
+    BlackBox& operator=(const BlackBox&) = delete;
+    BlackBox(BlackBox&&) = delete;
+    BlackBox& operator=(BlackBox&&) = delete;
+
+    /// @brief BlackBoxインスタンスを作成するファクトリメソッド
+    /// @param ns 名前空間を指定する．
+    /// @param name ノード名を指定する．
+    /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
+    /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
+    /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
+    /// @param max_cache_size キャッシュサイズを指定する．レコードするサイズによって最適な変更する．（デフォルトは1024*128）
+    /// @return std::shared_ptr<BlackBox> インスタンス
+    static std::shared_ptr<BlackBox> create(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name="blackbox", storage_profile_t storage_preset_profile=storage_profile_t::zstd_fast, uint64_t max_cache_size=1024*128);
+
 public:
     // メッセージの書き込みを行うクラス（blackbox::Loggerやblackbox::Recordなどで使用）
     template<typename MessageT>
@@ -36,9 +54,9 @@ public:
     public:
         BlackBoxWriter(){}
 
-        void BlackBoxWriter_cons(BlackBox* handle, std::string topic_name, size_t drop_count=0)
+        void BlackBoxWriter_cons(std::shared_ptr<BlackBox> handle, std::string topic_name, size_t drop_count=0)
         {
-            auto res = handle->create(topic_name, MessageT::descriptor());
+            auto res = handle->register_channel(topic_name, MessageT::descriptor());
             if(res.first)
             {
                 _handle = handle;
@@ -49,64 +67,56 @@ public:
             }
         }
 
-
-        void write(MessageT* msg, bb_time_t tim)
+        void write(const MessageT& msg, bb_time_t tim)
         {
-            if(msg != NULL && _handle != NULL){
+            if(_handle != nullptr){
                 if((_counter % _drop_count) == 0)
                 {
-                    // メッセージのシリアライズ
-                    std::vector<std::byte> payload(msg->ByteSizeLong()); // uint8_t を使用
-                    msg->SerializeToArray(static_cast<void*>(payload.data()), payload.size());
+                    if(!msg.SerializeToString(&_serialize_buffer))
+                    {
+                        std::cerr << "Error: Failed to serialize message" << std::endl;
+                        return;
+                    }
                     
                     mcap::Message mcap_msg;
                     mcap_msg.channelId = _channel_id;
                     mcap_msg.sequence = 0;
-                    mcap_msg.publishTime = this->timespec_to_timestamp(tim);
-                    mcap_msg.logTime = this->timespec_to_timestamp(get_bb_tim());
-                    mcap_msg.data = payload.data(); // 修正: キャスト
-                    mcap_msg.dataSize = payload.size();
+                    mcap_msg.publishTime = timespec_to_timestamp(tim);
+                    mcap_msg.logTime = timespec_to_timestamp(get_bb_tim());
+                    mcap_msg.data = reinterpret_cast<const std::byte*>(_serialize_buffer.data());
+                    mcap_msg.dataSize = _serialize_buffer.size();
 
                     _handle->write(mcap_msg);
                 }
+                _counter++;
             }
-            _counter++;
         }
 
     private:
-        BlackBox*       _handle = nullptr;
+        std::shared_ptr<BlackBox> _handle = nullptr;
         std::string     _topic_name;
+        std::string     _serialize_buffer;  // Reusable buffer to avoid allocations
 
         mcap::ChannelId _channel_id = 0;
 
         size_t      _counter;
         size_t      _drop_count;
 
-        mcap::Timestamp timespec_to_timestamp(bb_time_t ts) {
-            return mcap::Timestamp((uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec);
+        static mcap::Timestamp timespec_to_timestamp(bb_time_t ts) {
+            return static_cast<mcap::Timestamp>(
+                static_cast<uint64_t>(ts.tv_sec) * 1000000000ULL + static_cast<uint64_t>(ts.tv_nsec));
         }
     };
 
 public:
     const debug_mode_t    _bb_debug_mode;
 
-    /// @brief 
-    /// @param ns 名前空間を指定する．
-    /// @param name ノード名を指定する．
-    /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
-    /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
-    /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
-    /// @param max_cache_size キャッシュサイズを指定する．レコードするサイズによって最適な変更する．（デフォルトは1024*128）
-    BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name="blackbox", storage_profile_t storage_preset_profile=storage_profile_t::zstd_fast, uint64_t max_cache_size=1024*128);
-
-    virtual ~BlackBox() noexcept
-    {
-        if(_writer != NULL)
-        {
-            _writer->close();
-            _writer->terminate();
-        }
+    virtual ~BlackBox() noexcept{
     }
+
+    /// @brief Check if the BlackBox was initialized successfully
+    /// @return true if valid, false otherwise
+    bool is_valid() const { return _writer != nullptr; }
 
     std::string get_namespace(void)
     {
@@ -119,35 +129,43 @@ public:
     }
 
 private:
+    /// @brief コンストラクタ（privateのためcreate()を使用してください）
+    /// @param ns 名前空間を指定する．
+    /// @param name ノード名を指定する．
+    /// @param debug_mode デバッグモードを指定する．主にログをコンソールに出力するかどうかを指定する．
+    /// @param file_name ファイル名を指定する．（デフォルトは"blackbox"）
+    /// @param storage_preset_profile mcapのstorage　profileを指定する．（デフォルトはstorage_profile_t::zstd_fast）
+    /// @param max_cache_size キャッシュサイズを指定する．レコードするサイズによって最適な変更する．（デフォルトは1024*128）
+    BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, std::string file_name="blackbox", storage_profile_t storage_preset_profile=storage_profile_t::zstd_fast, uint64_t max_cache_size=1024*128);
+
     std::string _ns;
     std::string _name;
 
     std::unordered_map<std::string, mcap::SchemaId> _schema_map;
     std::unordered_map<std::string, mcap::ChannelId> _channel_map;
 
-    std::ofstream _out_file;
-    std::shared_ptr<mcap::McapWriter> _writer = NULL;
-    
+    std::shared_ptr<std::pair<std::ofstream, mcap::McapWriter>> _writer = nullptr;
+
     static std::mutex _sig_mutex;
-    static std::vector<std::shared_ptr<mcap::McapWriter>> _sig_queue;
+    static std::vector<std::shared_ptr<std::pair<std::ofstream, mcap::McapWriter>>> _sig_queue;
 
     size_t _err_count = 0;
 
 
-    std::pair<bool, mcap::ChannelId> create(std::string topic_name, const google::protobuf::Descriptor* descriptor);
+    std::pair<bool, mcap::ChannelId> register_channel(std::string topic_name, const google::protobuf::Descriptor* descriptor);
 
-    void write(mcap::Message msg)
+    void write(const mcap::Message& msg)
     {
-        if(_writer != NULL)
+        if(_writer != nullptr)
         {
-            auto res = _writer->write(msg);
-            if(!res.ok()){
-                // エラー処理
-                if(_err_count % 10)
+            const auto res = _writer->second.write(msg);
+            if(!res.ok())
+            {
+                if((_err_count % 10) == 0)
                 {                
                     std::cerr << "Error: " << res.message << std::endl;
                 }
-                _err_count++;
+                ++_err_count;
             }
         }
     }

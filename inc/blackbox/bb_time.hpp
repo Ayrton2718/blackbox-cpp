@@ -18,12 +18,18 @@ inline bb_time_t get_bb_tim(void){
 
 inline void set_proto_timestamp(google::protobuf::Timestamp* stamp, bb_time_t tim = get_bb_tim())
 {
+    if(stamp == nullptr)
+        return;
+
     stamp->set_seconds(tim.tv_sec);
     stamp->set_nanos(tim.tv_nsec);
 }
 
 inline void set_proto_duaration(google::protobuf::Duration* stamp, int64_t sec, int32_t nsec)
 {
+    if(stamp == nullptr)
+        return;
+
     stamp->set_seconds(sec);
     stamp->set_nanos(nsec);
 }

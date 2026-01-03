@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package builtin_interfaces;
+
+// Time represents a ROS2 builtin_interfaces/Time message
+message Time {
+  int32 sec = 1;    // Seconds component
+  uint32 nanosec = 2; // Nanoseconds component
+}
+

@@ -8,7 +8,12 @@ message(STATUS "PROTO_DIR: ${PROTO_DIR}")
 message(STATUS "GEN_DIR: ${GEN_DIR}")
 
 # Collect all .proto files from the proto directory
-file(GLOB PROTO_FILES "${PROTO_DIR}/simpleproto/*.proto")
+file(GLOB PROTO_FILES 
+    "${PROTO_DIR}/simpleproto/*.proto"
+    "${PROTO_DIR}/builtin_interfaces/*.proto"
+    "${PROTO_DIR}/std_msgs/*.proto"
+    "${PROTO_DIR}/geometry_msgs/*.proto"
+)
 
 # Ensure the directory for generated files exists
 file(MAKE_DIRECTORY ${GEN_DIR})

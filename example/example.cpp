@@ -18,6 +18,7 @@
 #include "foxglove/LaserScan.pb.h"
 
 #include "simpleproto/MultiArray.pb.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.pb.h"
 
 #define BOX_SIZE (5.0)
 
@@ -75,19 +76,19 @@ void set_wall(foxglove::LinePrimitive* line)
     color->set_a(255);  // Alpha (fully opaque)
 }
 
-std::unique_ptr<simpleproto::MultiArrayDouble> create_multi_array_msg(double x, double y, double z)
+std::shared_ptr<simpleproto::MultiArrayDouble> create_multi_array_msg(double x, double y, double z)
 {
-    std::unique_ptr<simpleproto::MultiArrayDouble> array_msg = std::make_unique<simpleproto::MultiArrayDouble>();
+    std::shared_ptr<simpleproto::MultiArrayDouble> array_msg = std::make_shared<simpleproto::MultiArrayDouble>();
     // Set example double array
     array_msg->add_values(x);
     array_msg->add_values(y);
     array_msg->add_values(z);
-    return std::move(array_msg);
+    return array_msg;
 }
 
-std::unique_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, double y, double z)
+std::shared_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, double y, double z)
 {
-    std::unique_ptr<foxglove::FrameTransform> transform_msg = std::make_unique<foxglove::FrameTransform>();
+    std::shared_ptr<foxglove::FrameTransform> transform_msg = std::make_shared<foxglove::FrameTransform>();
 
     blackbox::set_proto_timestamp(transform_msg->mutable_timestamp());
 
@@ -107,12 +108,12 @@ std::unique_ptr<foxglove::FrameTransform> create_frame_transform_msg(double x, d
     rotation->set_z(0.0);
     rotation->set_w(1.0);
 
-    return std::move(transform_msg);
+    return transform_msg;
 }
 
-std::unique_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double y, double z)
+std::shared_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double y, double z)
 {
-    std::unique_ptr<foxglove::SceneUpdate> scene_update_msg = std::make_unique<foxglove::SceneUpdate>();
+    std::shared_ptr<foxglove::SceneUpdate> scene_update_msg = std::make_shared<foxglove::SceneUpdate>();
     
     auto element = scene_update_msg->add_entities();
     blackbox::set_proto_timestamp(element->mutable_timestamp());
@@ -124,12 +125,59 @@ std::unique_ptr<foxglove::SceneUpdate> create_scene_update_msg(double x, double 
     auto lines = element->mutable_lines();
     set_wall(lines->Add());
 
-    return std::move(scene_update_msg);
+    return scene_update_msg;
 }
 
-std::unique_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
+std::shared_ptr<geometry_msgs::PoseWithCovarianceStamped> create_localization_msg(double x, double y, double yaw)
 {
-    std::unique_ptr<foxglove::LaserScan> laser_scan_msg = std::make_unique<foxglove::LaserScan>();
+    auto msg = std::make_shared<geometry_msgs::PoseWithCovarianceStamped>();
+
+    // Set header
+    auto header = msg->mutable_header();
+    auto stamp = header->mutable_stamp();
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    stamp->set_sec(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+    stamp->set_nanosec(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() % 1000000000);
+    header->set_frame_id("map");
+
+    // Set pose
+    auto pose_with_cov = msg->mutable_pose();
+    auto pose = pose_with_cov->mutable_pose();
+    
+    // Set position
+    auto position = pose->mutable_position();
+    position->set_x(x);
+    position->set_y(y);
+    position->set_z(0.0);
+
+    // Set orientation (quaternion from yaw angle)
+    auto orientation = pose->mutable_orientation();
+    orientation->set_x(0.0);
+    orientation->set_y(0.0);
+    orientation->set_z(std::sin(yaw / 2.0));
+    orientation->set_w(std::cos(yaw / 2.0));
+
+    // Set covariance matrix (6x6 = 36 elements)
+    // Diagonal elements represent variance for x, y, z, roll, pitch, yaw
+    // Using small values to indicate high confidence in localization
+    for (int i = 0; i < 36; i++) {
+        pose_with_cov->add_covariance(0.0);
+    }
+    // Set diagonal elements (variance)
+    pose_with_cov->set_covariance(0, 0.01);   // x variance
+    pose_with_cov->set_covariance(7, 0.01);   // y variance
+    pose_with_cov->set_covariance(14, 0.01);  // z variance
+    pose_with_cov->set_covariance(21, 0.001); // roll variance
+    pose_with_cov->set_covariance(28, 0.001); // pitch variance
+    pose_with_cov->set_covariance(35, 0.01);  // yaw variance
+
+    return msg;
+}
+
+std::shared_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
+{
+    std::shared_ptr<foxglove::LaserScan> laser_scan_msg = std::make_shared<foxglove::LaserScan>();
 
     blackbox::set_proto_timestamp(laser_scan_msg->mutable_timestamp());
 
@@ -157,37 +205,24 @@ std::unique_ptr<foxglove::LaserScan> create_laser_scan_msg(void)
         laser_scan_msg->add_ranges(4.0);
         laser_scan_msg->add_intensities(100);
     }
-    return std::move(laser_scan_msg);
+    return laser_scan_msg;
 }
 
 
 // sample main function of logger using blackbox
 int main()
 {
-    // create blackbox node
-    blackbox::BlackBox bb("ns", "name", blackbox::debug_mode_t::DEBUG);
+    auto bb = blackbox::BlackBox::create("ns", "name", blackbox::debug_mode_t::DEBUG);
 
-    // create logger
-    blackbox::Logger info;
-    info.init(&bb, blackbox::log_type_t::INFO, "position");
+    auto info = blackbox::Logger::create(bb, blackbox::log_type_t::INFO, "position");
+    auto error = blackbox::Logger::create(bb, blackbox::log_type_t::ERR, "over_position");
 
-    blackbox::Logger error;
-    error.init(&bb, blackbox::log_type_t::ERR, "over_position");
-
-    blackbox::Record<foxglove::FrameTransform> frame_record;
-    frame_record.init(&bb, "tf");
-
-    blackbox::Record<foxglove::SceneUpdate> scene_record;
-    scene_record.init(&bb, "scene");
-
-    blackbox::Record<foxglove::LaserScan> laser_record;
-    laser_record.init(&bb, "laser_scan");
-
-    blackbox::Record<simpleproto::MultiArrayDouble> array_record;
-    array_record.init(&bb, "multi_array");
-
-    blackbox::Record<simpleproto::MultiArrayBool> diag_record;
-    diag_record.init(&bb, "diag");
+    auto frame_record = blackbox::Record<foxglove::FrameTransform>::create(bb, "tf");
+    auto scene_record = blackbox::Record<foxglove::SceneUpdate>::create(bb, "scene");
+    auto laser_record = blackbox::Record<foxglove::LaserScan>::create(bb, "laser_scan");
+    auto array_record = blackbox::Record<simpleproto::MultiArrayDouble>::create(bb, "multi_array");
+    auto diag_record = blackbox::Record<simpleproto::MultiArrayBool>::create(bb, "diag");
+    auto localization_record = blackbox::Record<geometry_msgs::PoseWithCovarianceStamped>::create(bb, "localization");
 
     auto start_time = std::chrono::steady_clock::now();
     auto end_time = start_time + std::chrono::seconds(10);  // Run for 10 seconds
@@ -200,16 +235,22 @@ int main()
         double y = 5.2 * std::sin(std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count());
         double z = 0.0;
 
+        // Calculate yaw from velocity direction (tangent to circular motion)
+        double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count();
+        double yaw = elapsed + M_PI / 2.0;  // Tangent direction for circular motion
+
         auto frame_msg = create_frame_transform_msg(x, y, z);
         auto scene_msg = create_scene_update_msg(x, y, z);
         auto array_msg = create_multi_array_msg(x, y, z);
         auto laser_msg = create_laser_scan_msg();
+        auto localization_msg = create_localization_msg(x, y, yaw);
 
         // Record messages
-        frame_record.record(frame_msg.get());
-        scene_record.record(scene_msg.get());
-        array_record.record(array_msg.get());
-        laser_record.record(laser_msg.get());
+        frame_record->record(frame_msg);
+        scene_record->record(scene_msg);
+        array_record->record(array_msg);
+        laser_record->record(laser_msg);
+        localization_record->record(localization_msg);
 
         auto diag_msg = std::make_shared<simpleproto::MultiArrayBool>();
         // Is x in box
@@ -219,13 +260,13 @@ int main()
 
         if(!diag_msg->values(0) || !diag_msg->values(1))
         {
-            TAGGER(&error, "Out of box: Position (%.2f, %.2f, %.2f)", x, y, z);
+            TAGGER(error, "Out of box: Position (%.2f, %.2f, %.2f)", x, y, z);
         }
         else
         {
-            TAGGER(&info, "In box: Position (%.2f, %.2f, %.2f)", x, y, z);
+            TAGGER(info, "In box: Position (%.2f, %.2f, %.2f)", x, y, z);
         }
-        diag_record.record(diag_msg);
+        diag_record->record(diag_msg);
 
         // Wait 1 second before next iteration
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
