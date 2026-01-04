@@ -1,3 +1,6 @@
+#define MCAP_IMPLEMENTATION
+#include <mcap/mcap.hpp>
+
 #include "blackbox/bb_blackbox.hpp"
 
 #include <csignal>
@@ -137,6 +140,26 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
     }
 }
 
+BlackBox::~BlackBox() noexcept
+{
+    if (_writer != nullptr)
+    {
+        tl_file::err_file_out(_ns, _name, "Closing blackbox bag file...");
+        {
+            std::lock_guard<std::mutex> lock(_sig_mutex);
+            _writer->second.close();
+            _writer->first.close();
+            
+            _sig_queue.erase(
+                std::remove(_sig_queue.begin(), _sig_queue.end(), _writer),
+                _sig_queue.end()
+            );
+        }
+
+        _writer.reset();
+    }
+}
+
 
 std::pair<bool, mcap::ChannelId> BlackBox::register_channel(std::string topic_name, const google::protobuf::Descriptor *descriptor)
 {
@@ -186,14 +209,14 @@ std::pair<bool, mcap::ChannelId> BlackBox::register_channel(std::string topic_na
 
 void BlackBox::handler(int sig)
 {
-    std::cerr << "SIGINT received, exiting..." << std::endl;
+    tl_file::err_file_out("SIGINT received, exiting...");
 
     std::lock_guard<std::mutex> lock(_sig_mutex);
     for (auto &sig_instance : _sig_queue)
     {
         if (sig_instance != nullptr)
         {
-            std::cerr << "Closing blackbox bag file..." << std::endl;
+            tl_file::err_file_out("Closing blackbox bag file...");
             sig_instance->second.close();
             sig_instance->first.close();
 

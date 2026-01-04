@@ -111,8 +111,7 @@ public:
 public:
     const debug_mode_t    _bb_debug_mode;
 
-    virtual ~BlackBox() noexcept{
-    }
+    virtual ~BlackBox() noexcept;
 
     /// @brief Check if the BlackBox was initialized successfully
     /// @return true if valid, false otherwise

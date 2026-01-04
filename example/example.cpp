@@ -1,6 +1,3 @@
-#define MCAP_IMPLEMENTATION
-#include <mcap/writer.hpp>
-
 #include <chrono>
 #include <cstring>
 #include <fstream>

@@ -140,7 +140,9 @@ void err_file_out(std::string ns, std::string node, std::string msg)
     g_locker.lock();
     if(g_is_initialized)
     {
-        err_file_out("(" + ns + "." + node + ") " + msg);
+        std::string str = "(" + ns + "." + node + ") " + msg;
+        str += "\n";
+        fputs(str.c_str(), g_err_fp);
     }
     g_locker.unlock();
 }
