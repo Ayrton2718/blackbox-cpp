@@ -10,8 +10,7 @@ namespace blackbox
 
 /// @brief Publisher + レコードのクラス
 /// @tparam MessageT メッセージ型
-/// @tparam IS_ENABLE_RECORD レコードを有効にするかを指定する．（デフォルトはtrue）
-template<typename MessageT, bool IS_ENABLE_RECORD=true>
+template<typename MessageT>
 class Record : private BlackBoxWriter<MessageT>
 {
 public:
@@ -42,16 +41,14 @@ public:
         if(msg == nullptr)
             return;
 
-        if(IS_ENABLE_RECORD)
-            BlackBoxWriter<MessageT>::write(*msg, tim);
+        BlackBoxWriter<MessageT>::write(*msg, tim);
     }
 
     void record(std::shared_ptr<MessageT> msg, bb_time_t tim = blackbox::get_bb_tim()){
         if(msg == nullptr)
             return;
 
-        if(IS_ENABLE_RECORD)
-            BlackBoxWriter<MessageT>::write(*msg, tim);
+        BlackBoxWriter<MessageT>::write(*msg, tim);
     }
 
 private:
@@ -68,8 +65,7 @@ private:
             ns += '/';
         }
 
-        if(IS_ENABLE_RECORD)
-            BlackBoxWriter<MessageT>::BlackBoxWriter_cons(bb, "/record" + ns + record_name, drop_count);
+        BlackBoxWriter<MessageT>::BlackBoxWriter_cons(bb, "/record" + ns + record_name, drop_count);
     }
 };
 

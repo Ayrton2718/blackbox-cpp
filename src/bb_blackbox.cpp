@@ -1,4 +1,5 @@
 #define MCAP_IMPLEMENTATION
+#include <mcap/mcap.hpp>
 
 #include "blackbox/bb_blackbox.hpp"
 
@@ -136,6 +137,25 @@ BlackBox::BlackBox(std::string ns, std::string name, debug_mode_t debug_mode, st
         std::lock_guard<std::mutex> lock(_sig_mutex);
         _sig_queue.push_back(_writer);
         signal(SIGINT, BlackBox::handler);
+    }
+}
+
+BlackBox::~BlackBox() noexcept
+{
+    if (_writer != nullptr)
+    {
+        {
+            std::lock_guard<std::mutex> lock(_sig_mutex);
+            _writer->second.close();
+            _writer->first.close();
+            
+            _sig_queue.erase(
+                std::remove(_sig_queue.begin(), _sig_queue.end(), _writer),
+                _sig_queue.end()
+            );
+        }
+
+        _writer.reset();
     }
 }
 
