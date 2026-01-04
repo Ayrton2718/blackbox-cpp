@@ -1,3 +1,5 @@
+#define MCAP_IMPLEMENTATION
+
 #include "blackbox/bb_blackbox.hpp"
 
 #include <csignal>
