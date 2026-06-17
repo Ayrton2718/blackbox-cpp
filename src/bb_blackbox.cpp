@@ -1,4 +1,5 @@
 #define MCAP_IMPLEMENTATION
+#include <cstdint>
 #include <mcap/mcap.hpp>
 
 #include "blackbox/bb_blackbox.hpp"
